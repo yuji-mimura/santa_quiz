@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>チャリティーサンタ北東京支部 ご家庭班クイズ</title>
+<script src="https://cdn.tailwindcss.com" defer></script>
+<script src="https://unpkg.com/lucide@latest" defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --xmas-red: #c0392b;
+    --xmas-red-dark: #a5311f;
+    --xmas-green: #1e6b45;
+    --xmas-green-dark: #14513350;
+    --xmas-gold: #d4af37;
+    --xmas-cream: #fff8ec;
+    --outline-brown: #5a3d28;
+  }
+  * { font-family: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', sans-serif; }
+  body {
+    background:
+      radial-gradient(1.6px 1.6px at 10% 12%, rgba(255,255,255,0.9), transparent),
+      radial-gradient(1.4px 1.4px at 32% 28%, rgba(255,255,255,0.7), transparent),
+      radial-gradient(1.8px 1.8px at 55% 8%, rgba(255,255,255,0.8), transparent),
+      radial-gradient(1.3px 1.3px at 78% 22%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(1.6px 1.6px at 92% 45%, rgba(255,255,255,0.7), transparent),
+      radial-gradient(1.4px 1.4px at 15% 55%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(1.7px 1.7px at 45% 68%, rgba(255,255,255,0.7), transparent),
+      radial-gradient(1.3px 1.3px at 68% 82%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(1.5px 1.5px at 85% 90%, rgba(255,255,255,0.6), transparent),
+      radial-gradient(circle at 15% 6%, #26375f 0%, transparent 35%),
+      radial-gradient(circle at 30% 0%, #16224a 0%, #0d1830 45%, #060c1c 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: var(--outline-brown);
+  }
+  #moon {
+    position: fixed;
+    top: 24px;
+    left: 28px;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fffdf0, #fdf3c8 60%, #f2e2a0 100%);
+    box-shadow: 0 0 46px 14px rgba(253, 243, 200, 0.35);
+    z-index: 0;
+    pointer-events: none;
+  }
+  .app-screen { min-height: 100vh; }
+  .card-panel {
+    background: var(--xmas-cream);
+    border: 4px solid var(--outline-brown);
+    box-shadow: 0 10px 0 rgba(0,0,0,0.15);
+  }
+  .btn-xmas {
+    border: 4px solid var(--outline-brown);
+    box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+    transition: transform .1s ease, box-shadow .1s ease;
+  }
+  .btn-xmas:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.2); }
+  .btn-xmas:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; transform: none; }
+  .choice-card {
+    border-color: var(--outline-brown);
+    cursor: pointer;
+    transition: transform .1s ease, background-color .15s ease;
+  }
+  .choice-card:hover { transform: translateY(-2px); }
+  .choice-card.selected {
+    background-color: var(--xmas-gold) !important;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  }
+  @keyframes shake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-8px); }
+    40%, 60% { transform: translateX(8px); }
+  }
+  .shake { animation: shake .5s; }
+  .password-input {
+    -webkit-text-security: disc;
+  }
+  .ordering-item { cursor: grab; transition: opacity .15s ease, outline .1s ease; }
+  .ordering-item.dragging { opacity: 0.4; cursor: grabbing; }
+  .ordering-item.drag-over { outline: 3px dashed var(--xmas-green); outline-offset: 2px; }
+  #snow-container { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+  .snowflake {
+    position: absolute;
+    top: -10px;
+    border-radius: 50%;
+    background: white;
+    animation: snow-fall linear infinite;
+  }
+  @keyframes snow-fall {
+    from { transform: translate(0, -10vh); }
+    to   { transform: translate(var(--drift), 110vh); }
+  }
+  .app-content { position: relative; z-index: 1; }
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--outline-brown); color: white; padding: 12px 24px;
+    border-radius: 999px; z-index: 100; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,.3);
+  }
+  .family-illustration-box { aspect-ratio: 300 / 320; width: 100%; max-width: 320px; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<div id="moon"></div>
+<div id="snow-container"></div>
+
+<div class="app-content">
+
+  <!-- ============ HOME ============ -->
+  <section id="screen-home" class="app-screen hidden flex flex-col items-center px-4 py-8">
+    <div class="w-full max-w-2xl relative">
+      <button id="btn-open-settings" class="absolute -top-2 right-0 w-12 h-12 rounded-full bg-white/90 border-4 flex items-center justify-center btn-xmas" style="border-color:var(--outline-brown)" title="管理者設定">
+        <i data-lucide="settings" class="w-6 h-6" style="color:var(--outline-brown)"></i>
+      </button>
+      <div class="text-center pt-4 pb-2">
+        <p class="text-3xl mb-1" style="color:var(--xmas-gold)">🎄🎅🎄</p>
+        <h1 class="text-2xl sm:text-4xl font-black leading-tight" style="color:var(--xmas-red)">チャリティーサンタ北東京支部<br>ご家庭班クイズ</h1>
+      </div>
+      <div class="card-panel rounded-3xl p-4 my-4">
+        <div id="home-family-illustration" class="family-illustration-box"></div>
+      </div>
+      <div class="flex flex-col gap-4 mt-6">
+        <button id="btn-start-new" class="btn-xmas rounded-2xl py-4 text-xl font-black text-white" style="background:var(--xmas-red)">🎁 最初からクイズを始める</button>
+        <button id="btn-resume" class="btn-xmas rounded-2xl py-4 text-xl font-black text-white hidden" style="background:var(--xmas-green)">🔔 続きから再開する</button>
+        <button id="btn-view-ranking" class="btn-xmas rounded-2xl py-4 text-xl font-black" style="background:var(--xmas-gold);color:white">🏆 ランキング表示</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ NAME ENTRY ============ -->
+  <section id="screen-name-entry" class="app-screen hidden flex flex-col items-center justify-center px-4 py-8">
+    <form id="form-name-entry" class="card-panel rounded-3xl p-8 w-full max-w-md">
+      <h2 class="text-2xl font-black mb-6 text-center" style="color:var(--xmas-red)">サンタネームを入力してね</h2>
+      <input id="name-input" type="text" maxlength="30" placeholder="例: ゆきだるま太郎" class="w-full border-4 rounded-2xl p-4 text-xl text-center mb-2" style="border-color:var(--outline-brown)">
+      <p id="name-error" class="text-red-600 font-bold text-center mb-4 hidden">サンタネームを入力してください</p>
+      <div class="flex gap-3 mt-4">
+        <button type="button" id="btn-name-back" class="btn-xmas flex-1 rounded-2xl py-3 font-bold bg-white">戻る</button>
+        <button type="submit" id="btn-name-continue" class="btn-xmas flex-1 rounded-2xl py-3 font-black text-white" style="background:var(--xmas-green)">はじめる</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section id="screen-quiz" class="app-screen hidden flex flex-col items-center px-4 py-6">
+    <div class="w-full max-w-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <span id="quiz-progress-label" class="text-white font-black text-lg">問題 1 / 1</span>
+        <span id="quiz-points-label" class="px-4 py-1 rounded-full font-black text-white" style="background:var(--xmas-red)">配点: 0点</span>
+      </div>
+
+      <div class="card-panel rounded-2xl px-4 py-2 mb-3 flex items-center justify-between">
+        <span class="font-bold">総合得点</span>
+        <span id="quiz-total-score-label" class="text-2xl font-black" style="color:var(--xmas-green)">0 / 0 点</span>
+      </div>
+
+      <div class="card-panel rounded-3xl p-3 mb-4">
+        <div id="quiz-family-illustration" class="family-illustration-box"></div>
+      </div>
+
+      <form id="quiz-answer-form">
+        <div id="answer-area" class="card-panel rounded-3xl p-5 mb-4">
+          <div id="answer-content"></div>
+        </div>
+
+        <div id="passphrase-row" class="card-panel rounded-2xl p-4 mb-4">
+          <p class="font-bold mb-2">🔒 合言葉を入力してください</p>
+          <input id="passphrase-input" type="text" placeholder="合言葉" class="w-full border-4 rounded-xl p-3 text-lg" style="border-color:var(--outline-brown)">
+          <p id="passphrase-error" class="text-red-600 font-bold mt-2 hidden">合言葉が違います</p>
+        </div>
+
+        <div id="quiz-action-buttons" class="flex flex-col gap-3">
+          <button type="submit" id="btn-submit-answer" class="btn-xmas rounded-2xl py-4 text-xl font-black text-white" style="background:var(--xmas-red)" disabled>回答する</button>
+          <button type="button" id="btn-save-exit" class="btn-xmas rounded-2xl py-3 font-bold bg-white">💾 途中セーブしてホームに戻る</button>
+        </div>
+      </form>
+
+      <div id="answer-feedback" class="hidden card-panel rounded-3xl p-6 mb-4 text-center">
+        <p class="text-lg font-bold mb-1">あなたの回答</p>
+        <p id="feedback-user-answer" class="text-2xl font-black mb-4"></p>
+        <p class="text-lg font-bold mb-1">正解</p>
+        <p id="feedback-correct-answer" class="text-2xl font-black mb-4" style="color:var(--xmas-gold)"></p>
+        <div id="feedback-explanation-row" class="hidden mb-4">
+          <p class="text-lg font-bold mb-1">解説</p>
+          <p id="feedback-explanation" class="text-base font-bold whitespace-pre-wrap"></p>
+        </div>
+        <p class="text-lg font-bold mb-1">獲得点数</p>
+        <p id="feedback-earned-score" class="text-4xl font-black mb-4" style="color:var(--xmas-red)"></p>
+        <p class="text-lg font-bold mb-1">現在までの総得点</p>
+        <p id="feedback-total-score" class="text-3xl font-black mb-4" style="color:var(--xmas-green)"></p>
+        <button type="button" id="btn-next-question" class="btn-xmas w-full rounded-2xl py-4 text-xl font-black text-white" style="background:var(--xmas-green)">次の問題へ</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RESULT ============ -->
+  <section id="screen-result" class="app-screen hidden flex flex-col items-center px-4 py-8">
+    <div class="w-full max-w-2xl">
+      <h2 class="text-3xl font-black text-center mb-4" style="color:var(--xmas-gold)">🎉 結果発表 🎉</h2>
+      <div class="card-panel rounded-3xl p-3 mb-4">
+        <div id="result-family-illustration" class="family-illustration-box"></div>
+      </div>
+      <div class="card-panel rounded-3xl p-6 text-center mb-4">
+        <p class="text-lg font-bold">サンタネーム</p>
+        <p id="result-name" class="text-2xl font-black mb-3" style="color:var(--xmas-red)"></p>
+        <p class="text-lg font-bold">総合スコア</p>
+        <p id="result-score" class="text-4xl font-black" style="color:var(--xmas-green)"></p>
+      </div>
+      <div class="flex flex-col gap-3">
+        <button id="btn-result-ranking" class="btn-xmas rounded-2xl py-4 text-xl font-black" style="background:var(--xmas-gold);color:white">🏆 ランキングを見る</button>
+        <button id="btn-result-home" class="btn-xmas rounded-2xl py-3 font-bold bg-white">ホームに戻る</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RANKING ============ -->
+  <section id="screen-ranking" class="app-screen hidden flex flex-col items-center px-4 py-8">
+    <div class="w-full max-w-2xl">
+      <h2 class="text-3xl font-black text-center mb-4" style="color:var(--xmas-gold)">🏆 ランキング 🏆</h2>
+      <div id="ranking-list" class="mb-6"></div>
+      <button id="btn-ranking-home" class="btn-xmas w-full rounded-2xl py-3 font-bold bg-white">ホームに戻る</button>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="screen-settings" class="app-screen hidden flex flex-col items-center px-4 py-8">
+    <div class="w-full max-w-3xl">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl sm:text-3xl font-black" style="color:var(--xmas-gold)">⚙️ 問題管理</h2>
+        <button id="btn-settings-home" class="btn-xmas rounded-xl px-4 py-2 font-bold bg-white">ホームへ</button>
+      </div>
+
+      <div class="card-panel rounded-3xl p-4 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-black text-lg">問題一覧</h3>
+          <button id="btn-add-question" class="btn-xmas rounded-xl px-4 py-2 font-black text-white" style="background:var(--xmas-green)">+ 問題を追加</button>
+        </div>
+        <div id="settings-question-list"></div>
+      </div>
+
+      <div class="card-panel rounded-3xl p-4 mb-4">
+        <h3 class="font-black text-lg mb-2">バックアップ</h3>
+        <p class="text-sm text-stone-600 mb-3">問題データはこの端末のブラウザ内にのみ保存されます。ブラウザのデータ消去などで失われないよう、編集後はファイルに保存しておくことをおすすめします。</p>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <button type="button" id="btn-export-questions" class="btn-xmas flex-1 rounded-xl px-4 py-3 font-black text-white" style="background:var(--xmas-green)">📥 問題をファイルに保存</button>
+          <button type="button" id="btn-import-questions" class="btn-xmas flex-1 rounded-xl px-4 py-3 font-black bg-white">📤 ファイルから読み込む</button>
+        </div>
+        <input type="file" id="input-import-questions" accept="application/json,.json" class="hidden">
+      </div>
+
+      <div id="question-form-container" class="card-panel rounded-3xl p-5 mb-4 hidden">
+        <h3 id="question-form-title" class="font-black text-lg mb-3">問題を追加</h3>
+        <form id="question-form">
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="text-sm font-bold block mb-1">出題順</label>
+              <input id="form-order" type="number" class="w-full border-2 rounded-xl p-2" style="border-color:var(--outline-brown)">
+            </div>
+            <div>
+              <label class="text-sm font-bold block mb-1">配点</label>
+              <input id="form-points" type="number" class="w-full border-2 rounded-xl p-2" style="border-color:var(--outline-brown)">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="text-sm font-bold block mb-1">問題</label>
+            <textarea id="form-admin-label" rows="2" class="w-full border-2 rounded-xl p-2" style="border-color:var(--outline-brown)"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="text-sm font-bold block mb-1">解説(任意・解答確認画面に表示されます)</label>
+            <textarea id="form-explanation" rows="2" class="w-full border-2 rounded-xl p-2" style="border-color:var(--outline-brown)"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="text-sm font-bold block mb-1">問題タイプ</label>
+              <select id="form-type" class="w-full border-2 rounded-xl p-2" style="border-color:var(--outline-brown)">
+                <option value="single">択一問題</option>
+                <option value="multi">複数選択問題</option>
+                <option value="numeric">数値問題</option>
+                <option value="ordering">並べ替え問題</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-sm font-bold block mb-1">合言葉</label>
+              <input id="form-passphrase" type="text" class="w-full border-2 rounded-xl p-2" style="border-color:var(--outline-brown)">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="flex items-center gap-2 font-bold">
+              <input id="form-is-practice" type="checkbox" class="w-5 h-5">
+              練習問題にする(総合得点に加算しない・常に1問目より前に出題)
+            </label>
+          </div>
+
+          <div id="group-choices" class="mb-3">
+            <label class="text-sm font-bold block mb-1">選択肢(記号 / 名称 / 配点)</label>
+            <div id="choice-rows"></div>
+            <button type="button" id="btn-add-choice-row" class="btn-xmas rounded-xl px-3 py-1 text-sm font-bold bg-white mt-1">+ 選択肢を追加</button>
+          </div>
+
+          <div id="group-numeric" class="mb-3 grid grid-cols-2 gap-3 hidden">
+            <div>
+              <label class="text-sm font-bold block mb-1">正解数値(整数)</label>
+              <input id="form-correct-value" type="number" step="1" class="w-full border-2 rounded-xl p-2" style="border-color:var(--outline-brown)">
+            </div>
+            <div>
+              <label class="text-sm font-bold block mb-1">誤差1ごとの減点</label>
+              <input id="form-penalty" type="number" step="0.5" class="w-full border-2 rounded-xl p-2" style="border-color:var(--outline-brown)">
+            </div>
+          </div>
+
+          <div id="group-ordering" class="mb-3 hidden">
+            <label class="text-sm font-bold block mb-1">正解の並び順(上から順に正解。記号 / 名称)</label>
+            <div id="ordering-rows"></div>
+            <button type="button" id="btn-add-ordering-row" class="btn-xmas rounded-xl px-3 py-1 text-sm font-bold bg-white mt-1">+ 項目を追加</button>
+          </div>
+
+          <div class="flex gap-3 mt-4">
+            <button type="button" id="btn-cancel-form" class="btn-xmas flex-1 rounded-xl py-3 font-bold bg-white">キャンセル</button>
+            <button type="submit" class="btn-xmas flex-1 rounded-xl py-3 font-black text-white" style="background:var(--xmas-red)">保存する</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card-panel rounded-3xl p-5">
+        <h3 class="font-black text-lg mb-2">ランキング管理</h3>
+        <button id="btn-reset-ranking" class="btn-xmas rounded-xl px-4 py-3 font-black text-white w-full" style="background:var(--xmas-red-dark)">ランキングデータを初期化する</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ ADMIN AUTH MODAL ============ -->
+<div id="modal-admin-auth" class="hidden fixed inset-0 bg-black/60 z-50 items-center justify-center px-4">
+  <form id="form-admin-auth" class="card-panel rounded-3xl p-6 w-full max-w-sm">
+    <h3 class="text-xl font-black mb-4 text-center">🔑 管理者パスワード</h3>
+    <input id="admin-password-input" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="パスワード" class="password-input w-full border-4 rounded-2xl p-3 text-lg text-center mb-2" style="border-color:var(--outline-brown)">
+    <p id="admin-password-error" class="text-red-600 font-bold text-center mb-2 hidden">パスワードが違います</p>
+    <div class="flex gap-3 mt-3">
+      <button type="button" id="btn-admin-cancel" class="btn-xmas flex-1 rounded-xl py-2 font-bold bg-white">キャンセル</button>
+      <button type="submit" id="btn-admin-submit" class="btn-xmas flex-1 rounded-xl py-2 font-black text-white" style="background:var(--xmas-green)">確認</button>
+    </div>
+  </form>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<script>
+/* ==================== 定数・データ ==================== */
+const QUESTIONS_KEY = 'csq_questions';
+const PROGRESS_KEY = 'csq_progress';
+const RANKING_KEY = 'csq_ranking';
+const ADMIN_PASSWORD = 'いちご';
+
+const SEED_QUESTIONS = [
+  { id: 'seed-0', type: 'single', order: 0, adminLabel: 'ウォームアップ:サンタの帽子の色は?(練習問題)', explanation: '', points: 10, passphrase: 'れんしゅう', isPractice: true,
+    choices: [ {key:'A', label:'赤', points:10}, {key:'B', label:'青', points:0}, {key:'C', label:'緑', points:0} ] },
+  { id: 'seed-1', type: 'single', order: 10, adminLabel: 'サンタの服の色は?(択一・例題)', explanation: 'サンタクロースの衣装は伝統的に赤と白の組み合わせが定番です。', points: 10, passphrase: 'となかい',
+    choices: [ {key:'A', label:'赤', points:10}, {key:'B', label:'青', points:0}, {key:'C', label:'緑', points:-5} ] },
+  { id: 'seed-2', type: 'multi', order: 20, adminLabel: 'サンタの相棒は?(複数選択・例題)', explanation: 'トナカイがソリを引き、こびと(エルフ)がプレゼント作りを手伝うと言われています。', points: 10, passphrase: 'くりすます',
+    choices: [ {key:'A', label:'トナカイ', points:5}, {key:'B', label:'ソリ', points:5}, {key:'C', label:'こびと', points:5}, {key:'D', label:'ペンギン', points:-5} ] },
+  { id: 'seed-3', type: 'numeric', order: 30, adminLabel: 'サンタのソリを引くトナカイは何頭?(数値・例題)', explanation: 'ルドルフを含めて全部で9頭という説が有名です。', points: 10, passphrase: 'えんとつ',
+    correctValue: 8, penaltyPerUnit: 2 },
+  { id: 'seed-4', type: 'ordering', order: 40, adminLabel: 'クリスマス当日の準備の順番(並べ替え・例題)', explanation: 'ツリーや靴下を準備し、クッキーを置いてから眠りにつくのが定番の流れです。', points: 10, passphrase: 'ほし',
+    items: [ {key:'A', label:'ツリーを飾る'}, {key:'B', label:'靴下を用意する'}, {key:'C', label:'クッキーを置く'}, {key:'D', label:'眠りにつく'} ] }
+];
+
+/* ---- お母さんイラスト用の表情絵文字マッピング ---- */
+const PERSON_EMOJI_BY_LEVEL = ['😭','😢','🥺','😟','😕','😐','🙂','😊','😄','🤩'];
+const PERSON_LABEL_BY_LEVEL = ['大号泣','号泣','べそべそ','半べそ','ちょっと不満','真顔','ちょっと笑顔','にっこり','にこにこ','最高の笑顔'];
+
+/* ==================== トップレベル状態 ==================== */
+let questions = [];
+let progress = null;
+let quizSession = null;
+let currentQuestion = null;
+let currentScreen = 'screen-home';
+let pendingAdminAction = null;
+let editingQuestionId = null;
+let selectedKeys = [];
+let numericValue = '';
+let orderKeys = [];
+let choiceRows = [];
+let orderingRows = [];
+let toastTimer = null;
+
+/* ==================== ユーティリティ ==================== */
+function uid() { return 'q_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
+function clamp(n, min, max) { return Math.min(max, Math.max(min, n)); }
+function arraysEqual(a, b) { return a.length === b.length && a.every((v, i) => v === b[i]); }
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), 2200);
+}
+function refreshIcons() { if (window.lucide) lucide.createIcons(); }
+
+/* ==================== ストレージ ==================== */
+function compareQuestions(a, b) {
+  const aPractice = a.isPractice ? 0 : 1;
+  const bPractice = b.isPractice ? 0 : 1;
+  if (aPractice !== bPractice) return aPractice - bPractice;
+  return a.order - b.order;
+}
+function loadQuestions() {
+  let raw;
+  try {
+    raw = localStorage.getItem(QUESTIONS_KEY);
+  } catch (e) {
+    showToast('保存データの読み込みに失敗しました');
+    return SEED_QUESTIONS.slice().sort(compareQuestions);
+  }
+  if (raw === null) { saveQuestions(SEED_QUESTIONS); return SEED_QUESTIONS.slice().sort(compareQuestions); }
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) throw new Error('invalid');
+    return parsed.slice().sort(compareQuestions);
+  } catch (e) {
+    // 壊れたデータを誤って上書きしないよう、元のキーには触れず退避コピーだけ残す
+    try { localStorage.setItem(QUESTIONS_KEY + '_corrupt_backup', raw); } catch (e2) {}
+    showToast('保存済みの問題データを読み込めませんでした(データは保持しています。設定画面から復旧してください)');
+    return SEED_QUESTIONS.slice().sort(compareQuestions);
+  }
+}
+function saveQuestions(list) {
+  try {
+    localStorage.setItem(QUESTIONS_KEY, JSON.stringify(list));
+  } catch (e) {
+    showToast('問題の保存に失敗しました。ブラウザの空き容量を確認してください');
+  }
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(PROGRESS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function saveProgress(state) { localStorage.setItem(PROGRESS_KEY, JSON.stringify(state)); }
+function clearProgress() { localStorage.removeItem(PROGRESS_KEY); }
+
+function loadRanking() {
+  try {
+    const raw = localStorage.getItem(RANKING_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.slice().sort((a, b) => b.score - a.score);
+  } catch (e) { return []; }
+}
+function saveRanking(list) { localStorage.setItem(RANKING_KEY, JSON.stringify(list.slice().sort((a, b) => b.score - a.score))); }
+function addRankingEntry(name, score, maxScore) {
+  const list = loadRanking();
+  list.push({ id: uid(), santaName: name, score, maxScore, date: Date.now() });
+  saveRanking(list);
+}
+
+/* ==================== お母さんイラスト(絵文字の顔+体、クリスマス背景) ==================== */
+function christmasTree(cx, cy, scale) {
+  return '<g transform="translate(' + cx + ',' + cy + ') scale(' + scale + ')">' +
+    '<rect x="-6" y="0" width="12" height="16" fill="#6b4423" stroke="#5a3d28" stroke-width="2"/>' +
+    '<path d="M0,-70 L28,-16 L-28,-16 Z" fill="#1e6b45" stroke="#5a3d28" stroke-width="3" stroke-linejoin="round"/>' +
+    '<path d="M0,-50 L22,-2 L-22,-2 Z" fill="#237a4f" stroke="#5a3d28" stroke-width="3" stroke-linejoin="round"/>' +
+    '<path d="M0,-32 L16,10 L-16,10 Z" fill="#2a8a5a" stroke="#5a3d28" stroke-width="3" stroke-linejoin="round"/>' +
+    '<circle cx="0" cy="-70" r="4" fill="#ffd23f" stroke="#5a3d28" stroke-width="1.5"/>' +
+    '<circle cx="-10" cy="-30" r="2.5" fill="#ffe066"/>' +
+    '<circle cx="9" cy="-42" r="2.5" fill="#ffe066"/>' +
+    '<circle cx="-6" cy="-10" r="2.5" fill="#ffe066"/>' +
+  '</g>';
+}
+function sparkleStar(cx, cy, size, opacity) {
+  return '<path d="M' + cx + ',' + (cy - size) + ' L' + (cx + size * 0.22) + ',' + (cy - size * 0.22) +
+    ' L' + (cx + size) + ',' + cy + ' L' + (cx + size * 0.22) + ',' + (cy + size * 0.22) +
+    ' L' + cx + ',' + (cy + size) + ' L' + (cx - size * 0.22) + ',' + (cy + size * 0.22) +
+    ' L' + (cx - size) + ',' + cy + ' L' + (cx - size * 0.22) + ',' + (cy - size * 0.22) + ' Z" fill="#fff9e0" opacity="' + opacity + '"/>';
+}
+function motherEmojiSVG(emoji, titleText, idSuffix) {
+  const skyId = 'skyGrad-' + idSuffix;
+  const moonId = 'moonGlow-' + idSuffix;
+  return '<svg viewBox="0 0 300 320" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">' +
+    (titleText ? '<title>' + escapeHtml(titleText) + '</title>' : '') +
+    '<defs>' +
+      '<linearGradient id="' + skyId + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="#0e1c40"/><stop offset="60%" stop-color="#1c2e5c"/><stop offset="100%" stop-color="#33477a"/>' +
+      '</linearGradient>' +
+      '<radialGradient id="' + moonId + '" cx="50%" cy="50%" r="50%">' +
+        '<stop offset="0%" stop-color="#fff9e0" stop-opacity="0.55"/><stop offset="100%" stop-color="#fff9e0" stop-opacity="0"/>' +
+      '</radialGradient>' +
+    '</defs>' +
+    '<rect x="0" y="0" width="300" height="320" fill="url(#' + skyId + ')"/>' +
+    '<circle cx="228" cy="56" r="60" fill="url(#' + moonId + ')"/>' +
+    '<circle cx="228" cy="56" r="26" fill="#fdf6d8" stroke="#f2e2a0" stroke-width="1"/>' +
+    '<circle cx="42" cy="40" r="1.8" fill="#ffffff" opacity="0.9"/>' +
+    '<circle cx="264" cy="130" r="1.6" fill="#ffffff" opacity="0.8"/>' +
+    '<circle cx="96" cy="24" r="1.5" fill="#ffffff" opacity="0.7"/>' +
+    '<circle cx="180" cy="100" r="1.4" fill="#ffffff" opacity="0.6"/>' +
+    '<circle cx="150" cy="150" r="1.6" fill="#ffffff" opacity="0.7"/>' +
+    '<circle cx="30" cy="120" r="1.4" fill="#ffffff" opacity="0.6"/>' +
+    '<circle cx="120" cy="50" r="1.3" fill="#ffffff" opacity="0.6"/>' +
+    sparkleStar(66, 78, 5, 0.85) +
+    sparkleStar(190, 34, 4, 0.8) +
+    sparkleStar(272, 190, 4.5, 0.75) +
+    christmasTree(34, 292, 0.85) +
+    christmasTree(266, 292, 0.7) +
+    '<path d="M0,278 Q75,258 150,276 Q225,294 300,274 L300,320 L0,320 Z" fill="#eef3fb"/>' +
+    '<text x="150" y="195" text-anchor="middle" dominant-baseline="central" font-size="190">' + emoji + '</text>' +
+  '</svg>';
+}
+function renderFamily(containerId, level) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  level = clamp(Math.round(level), 0, 9);
+  container.innerHTML = motherEmojiSVG(PERSON_EMOJI_BY_LEVEL[level], PERSON_LABEL_BY_LEVEL[level], containerId);
+}
+const NEUTRAL_EMOTION_LEVEL = 5;
+function stepEmotionLevel(currentLevel, score, maxPoints) {
+  if (!(maxPoints > 0)) return currentLevel;
+  if (score >= maxPoints) return clamp(currentLevel + 1, 0, 9);
+  if (score <= 0) return clamp(currentLevel - 2, 0, 9);
+  return clamp(currentLevel - 1, 0, 9);
+}
+
+/* ==================== 雪アニメーション ==================== */
+function initSnowfall(count) {
+  const container = document.getElementById('snow-container');
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < count; i++) {
+    const flake = document.createElement('div');
+    flake.className = 'snowflake';
+    flake.style.left = (Math.random() * 100) + '%';
+    flake.style.setProperty('--drift', ((Math.random() - 0.5) * 60) + 'px');
+    flake.style.animationDuration = (8 + Math.random() * 8) + 's';
+    flake.style.animationDelay = (Math.random() * -12) + 's';
+    const size = 4 + Math.random() * 6;
+    flake.style.width = size + 'px';
+    flake.style.height = size + 'px';
+    flake.style.opacity = String(0.4 + Math.random() * 0.5);
+    frag.appendChild(flake);
+  }
+  container.appendChild(frag);
+}
+
+/* ==================== 画面遷移 ==================== */
+function showScreen(id) {
+  document.querySelectorAll('.app-screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  currentScreen = id;
+  window.scrollTo(0, 0);
+}
+function goHome() {
+  questions = loadQuestions();
+  progress = loadProgress();
+  document.getElementById('btn-resume').classList.toggle('hidden', !progress);
+  renderFamily('home-family-illustration', 7);
+  showScreen('screen-home');
+  refreshIcons();
+}
+function goToNameEntry() {
+  document.getElementById('name-input').value = '';
+  document.getElementById('name-error').classList.add('hidden');
+  showScreen('screen-name-entry');
+}
+function goToRanking() {
+  renderRankingList();
+  showScreen('screen-ranking');
+}
+
+/* ==================== 管理者認証 ==================== */
+function openAdminModal(action) {
+  pendingAdminAction = action;
+  document.getElementById('admin-password-input').value = '';
+  document.getElementById('admin-password-error').classList.add('hidden');
+  const modal = document.getElementById('modal-admin-auth');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+}
+function closeAdminModal() {
+  const modal = document.getElementById('modal-admin-auth');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
+  pendingAdminAction = null;
+}
+function checkAdminPassword() {
+  const val = document.getElementById('admin-password-input').value.trim();
+  if (val === ADMIN_PASSWORD) {
+    const action = pendingAdminAction;
+    closeAdminModal();
+    if (action === 'settings') goToSettings();
+    else if (action === 'resetRanking') performRankingReset();
+  } else {
+    document.getElementById('admin-password-error').classList.remove('hidden');
+    const input = document.getElementById('admin-password-input');
+    input.value = '';
+    input.classList.add('shake');
+    setTimeout(() => input.classList.remove('shake'), 500);
+  }
+}
+
+/* ==================== クイズ進行 ==================== */
+function startNewQuiz() {
+  const name = document.getElementById('name-input').value.trim();
+  if (!name) {
+    document.getElementById('name-error').classList.remove('hidden');
+    return;
+  }
+  questions = loadQuestions();
+  if (questions.length === 0) {
+    showToast('問題が登録されていません。設定から問題を追加してください');
+    return;
+  }
+  quizSession = { santaName: name, currentIndex: 0, answers: [], cumulativeScore: 0, cumulativeMaxScore: 0, emotionLevel: NEUTRAL_EMOTION_LEVEL, savedAt: Date.now() };
+  showScreen('screen-quiz');
+  renderQuizQuestion(questions[0], 0);
+}
+function resumeQuiz() {
+  const saved = loadProgress();
+  if (!saved) return;
+  questions = loadQuestions();
+  quizSession = JSON.parse(JSON.stringify(saved));
+  if (typeof quizSession.emotionLevel !== 'number') quizSession.emotionLevel = NEUTRAL_EMOTION_LEVEL;
+  showScreen('screen-quiz');
+  if (quizSession.currentIndex >= questions.length) { finishQuiz(); return; }
+  renderQuizQuestion(questions[quizSession.currentIndex], quizSession.currentIndex);
+}
+function getScoredQuestions() { return questions.filter(q => !q.isPractice); }
+function renderQuizQuestion(question, index) {
+  currentQuestion = question;
+  if (!question.isPractice && index > 0 && questions[index - 1].isPractice) {
+    quizSession.emotionLevel = NEUTRAL_EMOTION_LEVEL;
+  }
+  if (question.isPractice) {
+    document.getElementById('quiz-progress-label').textContent = '練習問題';
+    document.getElementById('quiz-points-label').textContent = '得点対象外';
+  } else {
+    const scored = getScoredQuestions();
+    const scoredIndex = scored.findIndex(q => q.id === question.id);
+    document.getElementById('quiz-progress-label').textContent = '問題 ' + (scoredIndex + 1) + ' / ' + scored.length;
+    document.getElementById('quiz-points-label').textContent = '配点: ' + question.points + '点';
+  }
+  document.getElementById('quiz-total-score-label').textContent = quizSession.cumulativeScore + ' / ' + quizSession.cumulativeMaxScore + ' 点';
+  renderFamily('quiz-family-illustration', quizSession.emotionLevel);
+
+  document.getElementById('passphrase-input').value = '';
+  document.getElementById('passphrase-error').classList.add('hidden');
+  document.getElementById('answer-feedback').classList.add('hidden');
+  document.getElementById('quiz-answer-form').classList.remove('hidden');
+  document.getElementById('btn-submit-answer').disabled = true;
+
+  const content = document.getElementById('answer-content');
+  content.innerHTML = '';
+  if (question.type === 'single') renderChoiceUI(question, { multi: false }, content);
+  else if (question.type === 'multi') renderChoiceUI(question, { multi: true }, content);
+  else if (question.type === 'numeric') renderNumericUI(question, content);
+  else if (question.type === 'ordering') renderOrderingUI(question, content);
+}
+function renderChoiceUI(question, opts, content) {
+  selectedKeys = [];
+  const wrap = document.createElement('div');
+  wrap.className = 'grid grid-cols-2 sm:grid-cols-3 gap-3';
+  question.choices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'choice-card border-4 rounded-2xl p-5 text-3xl font-black bg-white';
+    btn.textContent = choice.key;
+    btn.addEventListener('click', () => {
+      if (opts.multi) {
+        if (selectedKeys.includes(choice.key)) {
+          selectedKeys = selectedKeys.filter(k => k !== choice.key);
+          btn.classList.remove('selected');
+        } else {
+          selectedKeys.push(choice.key);
+          btn.classList.add('selected');
+        }
+      } else {
+        selectedKeys = [choice.key];
+        wrap.querySelectorAll('.choice-card').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      }
+      updateSubmitEnabled();
+    });
+    wrap.appendChild(btn);
+  });
+  content.appendChild(wrap);
+}
+function renderNumericUI(question, content) {
+  numericValue = '';
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.inputMode = 'numeric';
+  input.className = 'w-full text-3xl text-center border-4 rounded-2xl p-4';
+  input.style.borderColor = 'var(--outline-brown)';
+  input.placeholder = '数値を入力';
+  input.addEventListener('input', () => {
+    let v = input.value.replace(/[^0-9-]/g, '');
+    v = (v[0] === '-' ? '-' : '') + v.replace(/-/g, '');
+    input.value = v;
+    numericValue = v;
+    updateSubmitEnabled();
+  });
+  content.appendChild(input);
+}
+function renderOrderingUI(question, content) {
+  orderKeys = question.items.map(i => i.key).slice().sort((a, b) => a.localeCompare(b));
+  renderOrderingList(question, content);
+}
+function renderOrderingList(question, content) {
+  content.innerHTML = '';
+  const list = document.createElement('ul');
+  list.className = 'space-y-2';
+  orderKeys.forEach((key, idx) => {
+    const item = question.items.find(i => i.key === key);
+    const li = document.createElement('li');
+    li.className = 'ordering-item flex items-center gap-3 bg-white border-4 rounded-2xl p-3';
+    li.style.borderColor = 'var(--outline-brown)';
+    li.draggable = true;
+    const handle = document.createElement('span');
+    handle.className = 'text-2xl text-stone-400 select-none';
+    handle.textContent = '⠿';
+    handle.setAttribute('aria-hidden', 'true');
+    const label = document.createElement('span');
+    label.className = 'font-bold text-xl flex-1';
+    label.textContent = item.key;
+    const btnGroup = document.createElement('div');
+    btnGroup.className = 'flex gap-2';
+    const upBtn = document.createElement('button');
+    upBtn.type = 'button';
+    upBtn.className = 'btn-xmas px-3 py-1 rounded-lg bg-white';
+    upBtn.textContent = '▲';
+    upBtn.addEventListener('click', () => moveItem(idx, -1, question, content));
+    const downBtn = document.createElement('button');
+    downBtn.type = 'button';
+    downBtn.className = 'btn-xmas px-3 py-1 rounded-lg bg-white';
+    downBtn.textContent = '▼';
+    downBtn.addEventListener('click', () => moveItem(idx, 1, question, content));
+    btnGroup.appendChild(upBtn);
+    btnGroup.appendChild(downBtn);
+    li.appendChild(handle);
+    li.appendChild(label);
+    li.appendChild(btnGroup);
+    li.addEventListener('dragstart', e => {
+      window.__dragIndex = idx;
+      li.classList.add('dragging');
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(idx));
+      }
+    });
+    li.addEventListener('dragend', () => {
+      li.classList.remove('dragging');
+      list.querySelectorAll('.ordering-item').forEach(el => el.classList.remove('drag-over'));
+    });
+    li.addEventListener('dragover', e => {
+      e.preventDefault();
+      li.classList.add('drag-over');
+    });
+    li.addEventListener('dragleave', () => { li.classList.remove('drag-over'); });
+    li.addEventListener('drop', e => {
+      e.preventDefault();
+      li.classList.remove('drag-over');
+      const from = window.__dragIndex;
+      window.__dragIndex = null;
+      if (from === undefined || from === null || from === idx) return;
+      const moved = orderKeys.splice(from, 1)[0];
+      orderKeys.splice(idx, 0, moved);
+      renderOrderingList(question, content);
+    });
+    list.appendChild(li);
+  });
+  content.appendChild(list);
+  updateSubmitEnabled();
+}
+function moveItem(index, direction, question, content) {
+  const newIndex = index + direction;
+  if (newIndex < 0 || newIndex >= orderKeys.length) return;
+  const tmp = orderKeys[index];
+  orderKeys[index] = orderKeys[newIndex];
+  orderKeys[newIndex] = tmp;
+  renderOrderingList(question, content);
+}
+function updateSubmitEnabled() {
+  const btn = document.getElementById('btn-submit-answer');
+  if (!currentQuestion) {
+    btn.disabled = true;
+    return;
+  }
+  let ok = false;
+  if (currentQuestion.type === 'single') ok = selectedKeys.length === 1;
+  else if (currentQuestion.type === 'multi') ok = selectedKeys.length >= 1;
+  else if (currentQuestion.type === 'numeric') ok = numericValue !== '' && numericValue !== '-';
+  else if (currentQuestion.type === 'ordering') ok = true;
+  btn.disabled = !ok;
+}
+function collectResponse(question) {
+  if (question.type === 'single' || question.type === 'multi') return selectedKeys.slice();
+  if (question.type === 'numeric') return parseInt(numericValue, 10);
+  if (question.type === 'ordering') return orderKeys.slice();
+}
+function scoreQuestion(question, response) {
+  if (question.type === 'single' || question.type === 'multi') {
+    let sum = 0;
+    response.forEach(key => {
+      const c = question.choices.find(ch => ch.key === key);
+      if (c) sum += c.points;
+    });
+    return Math.max(0, sum);
+  }
+  if (question.type === 'numeric') {
+    const diff = Math.abs(response - question.correctValue);
+    return Math.max(0, question.points - question.penaltyPerUnit * diff);
+  }
+  if (question.type === 'ordering') {
+    const correct = question.items.map(i => i.key);
+    if (arraysEqual(response, correct)) return question.points;
+    const mismatches = correct.reduce((count, key, i) => count + (response[i] !== key ? 1 : 0), 0);
+    if (mismatches === 2) return Math.round(question.points / 2);
+    return 0;
+  }
+  return 0;
+}
+function getCorrectAnswerText(question) {
+  if (question.type === 'single') {
+    const maxPoints = Math.max.apply(null, question.choices.map(c => c.points));
+    const correctKeys = question.choices.filter(c => c.points === maxPoints).map(c => c.key);
+    return correctKeys.length ? correctKeys.join('、') : '-';
+  }
+  if (question.type === 'multi') {
+    const correctKeys = question.choices.filter(c => c.points > 0).map(c => c.key);
+    return correctKeys.length ? correctKeys.join('、') : '-';
+  }
+  if (question.type === 'numeric') return String(question.correctValue);
+  if (question.type === 'ordering') return question.items.map(i => i.key).join(' → ');
+  return '-';
+}
+function getUserAnswerText(question, response) {
+  if (question.type === 'single' || question.type === 'multi') {
+    return response.length ? response.join('、') : '(未選択)';
+  }
+  if (question.type === 'numeric') return isNaN(response) ? '(未入力)' : String(response);
+  if (question.type === 'ordering') return response.join(' → ');
+  return '-';
+}
+function submitAnswer() {
+  if (!currentQuestion) return;
+  const passInput = document.getElementById('passphrase-input');
+  const passVal = passInput.value.trim();
+  if (passVal !== currentQuestion.passphrase.trim()) {
+    document.getElementById('passphrase-error').classList.remove('hidden');
+    passInput.classList.add('shake');
+    setTimeout(() => passInput.classList.remove('shake'), 500);
+    return;
+  }
+  document.getElementById('passphrase-error').classList.add('hidden');
+  const response = collectResponse(currentQuestion);
+  const score = scoreQuestion(currentQuestion, response);
+  const isPractice = !!currentQuestion.isPractice;
+  const correctAnswerText = getCorrectAnswerText(currentQuestion);
+  const userAnswerText = getUserAnswerText(currentQuestion, response);
+  quizSession.answers.push({ questionId: currentQuestion.id, type: currentQuestion.type, response, scoreAwarded: score, maxPoints: currentQuestion.points, isPractice });
+  if (!isPractice) {
+    quizSession.cumulativeScore += score;
+    quizSession.cumulativeMaxScore += currentQuestion.points;
+  }
+  quizSession.emotionLevel = stepEmotionLevel(quizSession.emotionLevel, score, currentQuestion.points);
+  quizSession.currentIndex += 1;
+  const isLastQuestion = quizSession.currentIndex >= questions.length;
+  const isPracticeTransition = isPractice && !isLastQuestion && !questions[quizSession.currentIndex].isPractice;
+  document.getElementById('quiz-total-score-label').textContent = quizSession.cumulativeScore + ' / ' + quizSession.cumulativeMaxScore + ' 点';
+  renderFamily('quiz-family-illustration', quizSession.emotionLevel);
+  showAnswerFeedback(score, quizSession.cumulativeScore, isLastQuestion, isPractice, correctAnswerText, isPracticeTransition, userAnswerText, currentQuestion.explanation, currentQuestion.points, quizSession.cumulativeMaxScore);
+}
+function showAnswerFeedback(earnedScore, totalScore, isLastQuestion, isPractice, correctAnswerText, isPracticeTransition, userAnswerText, explanationText, maxPoints, totalMaxScore) {
+  document.getElementById('quiz-answer-form').classList.add('hidden');
+  document.getElementById('feedback-user-answer').textContent = userAnswerText;
+  document.getElementById('feedback-correct-answer').textContent = correctAnswerText;
+  const explanationRow = document.getElementById('feedback-explanation-row');
+  if (explanationText && explanationText.trim()) {
+    document.getElementById('feedback-explanation').textContent = explanationText.trim();
+    explanationRow.classList.remove('hidden');
+  } else {
+    explanationRow.classList.add('hidden');
+  }
+  document.getElementById('feedback-earned-score').textContent = isPractice ? '(得点対象外)' : earnedScore + ' / ' + maxPoints + ' 点';
+  document.getElementById('feedback-total-score').textContent = totalScore + ' / ' + totalMaxScore + ' 点';
+  document.getElementById('btn-next-question').textContent = isLastQuestion ? '結果を見る' : (isPracticeTransition ? '本番を始める' : '次の問題へ');
+  document.getElementById('answer-feedback').classList.remove('hidden');
+}
+function proceedAfterAnswer() {
+  if (quizSession.currentIndex >= questions.length) finishQuiz();
+  else renderQuizQuestion(questions[quizSession.currentIndex], quizSession.currentIndex);
+}
+function saveProgressAndExit() {
+  quizSession.savedAt = Date.now();
+  saveProgress(quizSession);
+  showToast('途中経過を保存しました');
+  goHome();
+}
+function finishQuiz() {
+  clearProgress();
+  addRankingEntry(quizSession.santaName, quizSession.cumulativeScore, quizSession.cumulativeMaxScore);
+  renderResultScreen(quizSession);
+  showScreen('screen-result');
+}
+function renderResultScreen(session) {
+  document.getElementById('result-name').textContent = session.santaName;
+  document.getElementById('result-score').textContent = session.cumulativeScore + ' / ' + session.cumulativeMaxScore + ' 点';
+  renderFamily('result-family-illustration', typeof session.emotionLevel === 'number' ? session.emotionLevel : NEUTRAL_EMOTION_LEVEL);
+}
+function renderRankingList() {
+  const list = loadRanking();
+  const container = document.getElementById('ranking-list');
+  container.innerHTML = '';
+  if (list.length === 0) {
+    container.innerHTML = '<p class="text-center text-lg text-white/80 py-8">まだ記録がありません</p>';
+    return;
+  }
+  let rank = 1;
+  list.forEach((entry, idx) => {
+    if (idx > 0 && entry.score !== list[idx - 1].score) {
+      rank = idx + 1;
+    }
+    const row = document.createElement('div');
+    row.className = 'card-panel flex items-center justify-between rounded-2xl p-4 mb-2';
+    row.innerHTML =
+      '<div class="flex items-center gap-3">' +
+        '<span class="text-2xl font-black" style="color:var(--xmas-gold)">' + rank + '位</span>' +
+        '<span class="text-xl font-bold">' + escapeHtml(entry.santaName) + '</span>' +
+      '</div>' +
+      '<span class="text-2xl font-black" style="color:var(--xmas-red)">' + entry.score + ' / ' + entry.maxScore + '</span>';
+    container.appendChild(row);
+  });
+}
+
+/* ==================== 設定画面(管理者CRUD) ==================== */
+function goToSettings() {
+  questions = loadQuestions();
+  renderSettingsQuestionList();
+  resetQuestionForm();
+  showScreen('screen-settings');
+}
+function performRankingReset() {
+  saveRanking([]);
+  showToast('ランキングデータを初期化しました');
+  if (currentScreen === 'screen-ranking') renderRankingList();
+}
+const TYPE_LABEL = { single: '択一', multi: '複数選択', numeric: '数値', ordering: '並べ替え' };
+function renderSettingsQuestionList() {
+  const container = document.getElementById('settings-question-list');
+  container.innerHTML = '';
+  const sorted = questions.slice().sort(compareQuestions);
+  if (sorted.length === 0) {
+    container.innerHTML = '<p class="text-stone-500 py-4">問題がまだありません</p>';
+    return;
+  }
+  sorted.forEach(q => {
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between border-2 rounded-xl p-3 mb-2';
+    row.style.borderColor = 'var(--outline-brown)';
+    const info = document.createElement('div');
+    info.innerHTML =
+      '<span class="font-bold">[' + q.order + '] ' + escapeHtml(q.adminLabel || '(無題)') + '</span>' +
+      '<span class="ml-2 text-xs px-2 py-1 rounded-full whitespace-nowrap inline-block" style="background:var(--xmas-gold);color:white">' + TYPE_LABEL[q.type] + '</span>' +
+      (q.isPractice ? '<span class="ml-2 text-xs px-2 py-1 rounded-full whitespace-nowrap inline-block text-white" style="background:var(--xmas-green)">練習問題</span>' : '') +
+      '<span class="ml-2 text-sm text-stone-500">' + q.points + '点</span>';
+    const btns = document.createElement('div');
+    btns.className = 'flex gap-2 shrink-0';
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.textContent = '編集';
+    editBtn.className = 'btn-xmas px-3 py-1 rounded-lg text-sm font-bold bg-white';
+    editBtn.addEventListener('click', () => openQuestionForm(q));
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = '削除';
+    delBtn.className = 'btn-xmas px-3 py-1 rounded-lg text-sm font-bold text-white';
+    delBtn.style.background = 'var(--xmas-red)';
+    delBtn.addEventListener('click', () => deleteQuestion(q.id));
+    btns.appendChild(editBtn);
+    btns.appendChild(delBtn);
+    row.appendChild(info);
+    row.appendChild(btns);
+    container.appendChild(row);
+  });
+}
+function nextLetter(existingKeys) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for (const ch of alphabet) if (!existingKeys.includes(ch)) return ch;
+  return 'X' + existingKeys.length;
+}
+function openQuestionForm(question) {
+  editingQuestionId = question ? question.id : null;
+  document.getElementById('question-form-title').textContent = question ? '問題を編集' : '問題を追加';
+  const maxOrder = questions.length ? Math.max.apply(null, questions.map(q => q.order)) : 0;
+  document.getElementById('form-order').value = question ? question.order : maxOrder + 10;
+  document.getElementById('form-admin-label').value = question ? question.adminLabel : '';
+  document.getElementById('form-explanation').value = question ? (question.explanation || '') : '';
+  document.getElementById('form-type').value = question ? question.type : 'single';
+  document.getElementById('form-points').value = question ? question.points : 10;
+  document.getElementById('form-passphrase').value = question ? question.passphrase : '';
+  document.getElementById('form-is-practice').checked = question ? !!question.isPractice : false;
+
+  choiceRows = (question && (question.type === 'single' || question.type === 'multi'))
+    ? question.choices.map(c => Object.assign({}, c))
+    : [{ key: 'A', label: '', points: 0 }, { key: 'B', label: '', points: 0 }];
+  orderingRows = (question && question.type === 'ordering')
+    ? question.items.map(i => Object.assign({}, i))
+    : [{ key: 'A', label: '' }, { key: 'B', label: '' }];
+
+  document.getElementById('form-correct-value').value = (question && question.type === 'numeric') ? question.correctValue : 0;
+  document.getElementById('form-penalty').value = (question && question.type === 'numeric') ? question.penaltyPerUnit : 1;
+
+  renderChoiceRows();
+  renderOrderingRows();
+  onQuestionTypeChange();
+  const formBox = document.getElementById('question-form-container');
+  formBox.classList.remove('hidden');
+  formBox.scrollIntoView({ behavior: 'smooth' });
+}
+function resetQuestionForm() {
+  document.getElementById('question-form-container').classList.add('hidden');
+  editingQuestionId = null;
+}
+function onQuestionTypeChange() {
+  const type = document.getElementById('form-type').value;
+  document.getElementById('group-choices').classList.toggle('hidden', !(type === 'single' || type === 'multi'));
+  document.getElementById('group-numeric').classList.toggle('hidden', type !== 'numeric');
+  document.getElementById('group-ordering').classList.toggle('hidden', type !== 'ordering');
+}
+function renderChoiceRows() {
+  const container = document.getElementById('choice-rows');
+  container.innerHTML = '';
+  choiceRows.forEach((row, idx) => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'flex gap-2 mb-2 items-center';
+    const keyInput = document.createElement('input');
+    keyInput.type = 'text'; keyInput.value = row.key; keyInput.className = 'w-16 border-2 rounded-lg p-2 text-center'; keyInput.style.borderColor = 'var(--outline-brown)';
+    keyInput.addEventListener('input', e => { choiceRows[idx].key = e.target.value; });
+    const labelInput = document.createElement('textarea');
+    labelInput.rows = 2; labelInput.value = row.label; labelInput.placeholder = '選択肢名(長文・改行可)'; labelInput.className = 'flex-1 border-2 rounded-lg p-2'; labelInput.style.borderColor = 'var(--outline-brown)';
+    labelInput.addEventListener('input', e => { choiceRows[idx].label = e.target.value; });
+    const pointsInput = document.createElement('input');
+    pointsInput.type = 'number'; pointsInput.value = row.points; pointsInput.className = 'w-20 border-2 rounded-lg p-2'; pointsInput.style.borderColor = 'var(--outline-brown)';
+    pointsInput.addEventListener('input', e => { choiceRows[idx].points = parseInt(e.target.value, 10) || 0; });
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button'; removeBtn.textContent = '×'; removeBtn.className = 'btn-xmas px-3 py-2 rounded-lg text-white font-black'; removeBtn.style.background = 'var(--xmas-red)';
+    removeBtn.addEventListener('click', () => {
+      if (choiceRows.length <= 2) { showToast('選択肢は2つ以上必要です'); return; }
+      choiceRows.splice(idx, 1);
+      renderChoiceRows();
+    });
+    rowEl.appendChild(keyInput); rowEl.appendChild(labelInput); rowEl.appendChild(pointsInput); rowEl.appendChild(removeBtn);
+    container.appendChild(rowEl);
+  });
+}
+function addChoiceRow() {
+  choiceRows.push({ key: nextLetter(choiceRows.map(r => r.key)), label: '', points: 0 });
+  renderChoiceRows();
+}
+function renderOrderingRows() {
+  const container = document.getElementById('ordering-rows');
+  container.innerHTML = '';
+  orderingRows.forEach((row, idx) => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'flex gap-2 mb-2 items-center';
+    const keyInput = document.createElement('input');
+    keyInput.type = 'text'; keyInput.value = row.key; keyInput.className = 'w-16 border-2 rounded-lg p-2 text-center'; keyInput.style.borderColor = 'var(--outline-brown)';
+    keyInput.addEventListener('input', e => { orderingRows[idx].key = e.target.value; });
+    const labelInput = document.createElement('textarea');
+    labelInput.rows = 2; labelInput.value = row.label; labelInput.placeholder = '項目名(長文・改行可)'; labelInput.className = 'flex-1 border-2 rounded-lg p-2'; labelInput.style.borderColor = 'var(--outline-brown)';
+    labelInput.addEventListener('input', e => { orderingRows[idx].label = e.target.value; });
+    const upBtn = document.createElement('button');
+    upBtn.type = 'button'; upBtn.textContent = '▲'; upBtn.className = 'btn-xmas px-2 py-2 rounded-lg bg-white';
+    upBtn.addEventListener('click', () => { if (idx > 0) { const t = orderingRows[idx]; orderingRows[idx] = orderingRows[idx-1]; orderingRows[idx-1] = t; renderOrderingRows(); } });
+    const downBtn = document.createElement('button');
+    downBtn.type = 'button'; downBtn.textContent = '▼'; downBtn.className = 'btn-xmas px-2 py-2 rounded-lg bg-white';
+    downBtn.addEventListener('click', () => { if (idx < orderingRows.length - 1) { const t = orderingRows[idx]; orderingRows[idx] = orderingRows[idx+1]; orderingRows[idx+1] = t; renderOrderingRows(); } });
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button'; removeBtn.textContent = '×'; removeBtn.className = 'btn-xmas px-3 py-2 rounded-lg text-white font-black'; removeBtn.style.background = 'var(--xmas-red)';
+    removeBtn.addEventListener('click', () => {
+      if (orderingRows.length <= 2) { showToast('項目は2つ以上必要です'); return; }
+      orderingRows.splice(idx, 1);
+      renderOrderingRows();
+    });
+    rowEl.appendChild(keyInput); rowEl.appendChild(labelInput); rowEl.appendChild(upBtn); rowEl.appendChild(downBtn); rowEl.appendChild(removeBtn);
+    container.appendChild(rowEl);
+  });
+}
+function addOrderingItemRow() {
+  orderingRows.push({ key: nextLetter(orderingRows.map(r => r.key)), label: '' });
+  renderOrderingRows();
+}
+function saveQuestionForm(event) {
+  event.preventDefault();
+  const order = parseInt(document.getElementById('form-order').value, 10);
+  const adminLabel = document.getElementById('form-admin-label').value.trim();
+  const explanation = document.getElementById('form-explanation').value.trim();
+  const type = document.getElementById('form-type').value;
+  const points = parseInt(document.getElementById('form-points').value, 10);
+  const passphrase = document.getElementById('form-passphrase').value.trim();
+  const isPractice = document.getElementById('form-is-practice').checked;
+
+  if (!adminLabel || !passphrase || isNaN(order) || isNaN(points)) {
+    showToast('必須項目を入力してください');
+    return;
+  }
+  const question = { id: editingQuestionId || uid(), type, order, adminLabel, explanation, points, passphrase, isPractice };
+
+  if (type === 'single' || type === 'multi') {
+    if (choiceRows.length < 2 || choiceRows.some(r => !r.label.trim() || !r.key.trim())) {
+      showToast('選択肢を2つ以上、すべて入力してください');
+      return;
+    }
+    question.choices = choiceRows.map(r => ({ key: r.key.trim(), label: r.label.trim(), points: Number(r.points) || 0 }));
+  } else if (type === 'numeric') {
+    const correctValue = parseInt(document.getElementById('form-correct-value').value, 10);
+    const penaltyPerUnit = parseFloat(document.getElementById('form-penalty').value);
+    if (isNaN(correctValue) || isNaN(penaltyPerUnit)) {
+      showToast('数値項目を正しく入力してください');
+      return;
+    }
+    question.correctValue = correctValue;
+    question.penaltyPerUnit = penaltyPerUnit;
+  } else if (type === 'ordering') {
+    if (orderingRows.length < 2 || orderingRows.some(r => !r.label.trim() || !r.key.trim())) {
+      showToast('項目を2つ以上、すべて入力してください');
+      return;
+    }
+    question.items = orderingRows.map(r => ({ key: r.key.trim(), label: r.label.trim() }));
+  }
+
+  if (editingQuestionId) questions = questions.map(q => (q.id === editingQuestionId ? question : q));
+  else questions.push(question);
+
+  saveQuestions(questions);
+  resetQuestionForm();
+  renderSettingsQuestionList();
+  showToast('保存しました');
+}
+function deleteQuestion(id) {
+  if (!confirm('この問題を削除しますか?')) return;
+  questions = questions.filter(q => q.id !== id);
+  saveQuestions(questions);
+  renderSettingsQuestionList();
+}
+
+/* ==================== 問題データのバックアップ(書き出し/読み込み) ==================== */
+function exportQuestions() {
+  if (questions.length === 0) {
+    showToast('書き出す問題がありません');
+    return;
+  }
+  const data = JSON.stringify(questions, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = 'charity-santa-quiz-questions-' + stamp + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast('問題をファイルに書き出しました');
+}
+function importQuestionsFromFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    let parsed;
+    try {
+      parsed = JSON.parse(reader.result);
+      if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('invalid');
+      parsed.forEach(q => {
+        if (!q || typeof q !== 'object' || !q.type || !q.adminLabel || !q.passphrase) throw new Error('invalid');
+      });
+    } catch (e) {
+      showToast('ファイルの読み込みに失敗しました。形式を確認してください');
+      return;
+    }
+    if (!confirm('現在の問題一覧(' + questions.length + '件)を、読み込んだ' + parsed.length + '件の問題で置き換えます。よろしいですか?')) return;
+    questions = parsed.map(q => Object.assign({}, q, { id: q.id || uid() }));
+    saveQuestions(questions);
+    renderSettingsQuestionList();
+    showToast('問題を読み込みました');
+  };
+  reader.onerror = () => showToast('ファイルの読み込みに失敗しました');
+  reader.readAsText(file);
+}
+
+/* ==================== イベント配線 ==================== */
+function wireEventListeners() {
+  document.getElementById('btn-open-settings').addEventListener('click', () => openAdminModal('settings'));
+  document.getElementById('btn-start-new').addEventListener('click', goToNameEntry);
+  document.getElementById('btn-resume').addEventListener('click', resumeQuiz);
+  document.getElementById('btn-view-ranking').addEventListener('click', goToRanking);
+
+  document.getElementById('form-name-entry').addEventListener('submit', e => { e.preventDefault(); startNewQuiz(); });
+  document.getElementById('btn-name-back').addEventListener('click', goHome);
+
+  document.getElementById('quiz-answer-form').addEventListener('submit', e => { e.preventDefault(); submitAnswer(); });
+  document.getElementById('btn-next-question').addEventListener('click', proceedAfterAnswer);
+  document.getElementById('btn-save-exit').addEventListener('click', saveProgressAndExit);
+
+  document.getElementById('btn-result-ranking').addEventListener('click', goToRanking);
+  document.getElementById('btn-result-home').addEventListener('click', goHome);
+  document.getElementById('btn-ranking-home').addEventListener('click', goHome);
+
+  document.getElementById('form-admin-auth').addEventListener('submit', e => { e.preventDefault(); checkAdminPassword(); });
+  document.getElementById('btn-admin-cancel').addEventListener('click', closeAdminModal);
+
+  document.getElementById('btn-settings-home').addEventListener('click', goHome);
+  document.getElementById('btn-add-question').addEventListener('click', () => openQuestionForm(null));
+  document.getElementById('btn-cancel-form').addEventListener('click', resetQuestionForm);
+  document.getElementById('question-form').addEventListener('submit', saveQuestionForm);
+  document.getElementById('form-type').addEventListener('change', onQuestionTypeChange);
+  document.getElementById('btn-add-choice-row').addEventListener('click', addChoiceRow);
+  document.getElementById('btn-add-ordering-row').addEventListener('click', addOrderingItemRow);
+  document.getElementById('btn-reset-ranking').addEventListener('click', () => openAdminModal('resetRanking'));
+
+  document.getElementById('btn-export-questions').addEventListener('click', exportQuestions);
+  document.getElementById('btn-import-questions').addEventListener('click', () => document.getElementById('input-import-questions').click());
+  document.getElementById('input-import-questions').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) importQuestionsFromFile(file);
+    e.target.value = '';
+  });
+}
+
+/* ==================== 起動 ==================== */
+document.addEventListener('DOMContentLoaded', () => {
+  questions = loadQuestions();
+  progress = loadProgress();
+  initSnowfall(45);
+  wireEventListeners();
+  goHome();
+  refreshIcons();
+});
+</script>
+</body>
+</html>
