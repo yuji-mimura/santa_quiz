@@ -1162,8 +1162,20 @@ async function goToSettings() {
 }
 async function performRankingReset() {
   await saveRanking([]);
-  showToast('ランキングデータを初期化しました');
+  await clearAllProgress();
+  showToast('ランキングデータとセーブデータを初期化しました');
   if (currentScreen === 'screen-ranking') await renderRankingList();
+  if (currentScreen === 'screen-home') {
+    document.getElementById('btn-resume').classList.add('hidden');
+  }
+}
+
+async function clearAllProgress() {
+  try {
+    await db.ref(PROGRESS_KEY).remove();
+  } catch (e) {
+    showToast('セーブデータの初期化に失敗しました');
+  }
 }
 const TYPE_LABEL = { single: '択一', multi: '複数選択', numeric: '数値', ordering: '並べ替え' };
 function renderSettingsQuestionList() {
