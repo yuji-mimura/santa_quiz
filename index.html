@@ -663,9 +663,25 @@ async function getAllSavedPlayers() {
   }
 }
 function goToNameEntry() {
+  resetNameEntryScreen();
   document.getElementById('name-input').value = '';
   document.getElementById('name-error').classList.add('hidden');
   showScreen('screen-name-entry');
+}
+function resetNameEntryScreen() {
+  const form = document.getElementById('form-name-entry');
+  form.querySelector('h2').textContent = 'サンタネームを入力してね';
+
+  const existingElements = form.querySelectorAll('#player-buttons, #player-selection-back-btn');
+  existingElements.forEach(el => el.remove());
+
+  const nameInput = document.getElementById('name-input');
+  const nameError = document.getElementById('name-error');
+  nameInput.style.display = '';
+  nameError.style.display = '';
+
+  const originalButtonRow = document.getElementById('btn-name-back').parentElement;
+  originalButtonRow.style.display = '';
 }
 async function goToRanking() {
   await renderRankingList();
@@ -755,13 +771,17 @@ function showPlayerSelectionScreen(players) {
   const heading = form.querySelector('h2');
   heading.textContent = '続きから再開するプレイヤーを選択';
 
-  const existingButtons = form.querySelectorAll('button[type="submit"], button[data-cancel], #player-buttons');
-  existingButtons.forEach(btn => btn.remove());
+  // 前回呼び出し時に追加した要素をすべて削除してから作り直す
+  const existingElements = form.querySelectorAll('#player-buttons, #player-selection-back-btn');
+  existingElements.forEach(el => el.remove());
 
   const nameInput = document.getElementById('name-input');
   const nameError = document.getElementById('name-error');
   nameInput.style.display = 'none';
   nameError.style.display = 'none';
+
+  const originalButtonRow = document.getElementById('btn-name-back').parentElement;
+  originalButtonRow.style.display = 'none';
 
   const playerButtonsContainer = document.createElement('div');
   playerButtonsContainer.id = 'player-buttons';
@@ -781,6 +801,7 @@ function showPlayerSelectionScreen(players) {
   });
 
   const backBtn = document.createElement('button');
+  backBtn.id = 'player-selection-back-btn';
   backBtn.type = 'button';
   backBtn.className = 'btn-xmas w-full rounded-2xl py-3 font-bold bg-white';
   backBtn.style.borderColor = 'var(--outline-brown)';
