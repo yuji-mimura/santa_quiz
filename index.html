@@ -751,34 +751,49 @@ async function resumeQuiz() {
 }
 
 function showPlayerSelectionScreen(players) {
-  const container = document.getElementById('answer-content');
-  container.innerHTML = '<div class="text-center"><p class="text-lg font-bold mb-4">続きから再開するプレイヤーを選択</p></div>';
+  const form = document.getElementById('form-name-entry');
+  const heading = form.querySelector('h2');
+  heading.textContent = '続きから再開するプレイヤーを選択';
 
-  const playerList = document.createElement('div');
-  playerList.className = 'space-y-2';
+  const existingButtons = form.querySelectorAll('button[type="submit"], button[data-cancel], #player-buttons');
+  existingButtons.forEach(btn => btn.remove());
+
+  const nameInput = document.getElementById('name-input');
+  const nameError = document.getElementById('name-error');
+  nameInput.style.display = 'none';
+  nameError.style.display = 'none';
+
+  const playerButtonsContainer = document.createElement('div');
+  playerButtonsContainer.id = 'player-buttons';
+  playerButtonsContainer.className = 'space-y-3 mb-4';
 
   players.forEach(player => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'choice-card w-full border-4 rounded-2xl p-4 text-lg font-bold bg-white text-left';
+    btn.className = 'btn-xmas w-full rounded-2xl py-4 text-lg font-bold bg-white border-4';
+    btn.style.borderColor = 'var(--outline-brown)';
     btn.textContent = player.name;
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       proceedWithResumeFromSelection(player.name);
     });
-    playerList.appendChild(btn);
+    playerButtonsContainer.appendChild(btn);
   });
 
   const backBtn = document.createElement('button');
   backBtn.type = 'button';
-  backBtn.className = 'btn-xmas w-full rounded-2xl py-3 font-bold bg-white mt-4';
+  backBtn.className = 'btn-xmas w-full rounded-2xl py-3 font-bold bg-white';
+  backBtn.style.borderColor = 'var(--outline-brown)';
   backBtn.textContent = 'ホームに戻る';
-  backBtn.addEventListener('click', goHome);
-  playerList.appendChild(backBtn);
+  backBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    goHome();
+  });
 
-  container.appendChild(playerList);
+  form.appendChild(playerButtonsContainer);
+  form.appendChild(backBtn);
+
   showScreen('screen-name-entry');
-  document.getElementById('form-name-entry').style.display = 'none';
-  document.getElementById('answer-content').parentElement.classList.remove('hidden');
 }
 
 async function proceedWithResumeFromSelection(playerName) {
