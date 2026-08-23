@@ -461,11 +461,17 @@ async function saveQuestions(list) {
 function setupQuestionsRealTimeListener(callback) {
   if (questionsRealTimeListener) questionsRealTimeListener();
   questionsRealTimeListener = db.ref(QUESTIONS_KEY).on('value', async (snapshot) => {
-    const data = snapshot.val();
-    if (data !== null && Array.isArray(data)) {
-      questions = data.slice().sort(compareQuestions);
-      if (callback) callback();
+    try {
+      const data = snapshot.val();
+      if (data !== null && Array.isArray(data)) {
+        questions = data.slice().sort(compareQuestions);
+        if (callback) callback();
+      }
+    } catch (e) {
+      console.error('Error in setupQuestionsRealTimeListener:', e);
     }
+  }, (error) => {
+    console.error('Firebase read error for questions:', error);
   });
 }
 
@@ -510,10 +516,16 @@ async function saveRanking(list) {
 function setupRankingRealTimeListener(callback) {
   if (rankingRealTimeListener) rankingRealTimeListener();
   rankingRealTimeListener = db.ref(RANKING_KEY).on('value', async (snapshot) => {
-    const data = snapshot.val();
-    if (data !== null && Array.isArray(data)) {
-      if (callback) callback();
+    try {
+      const data = snapshot.val();
+      if (data !== null && Array.isArray(data)) {
+        if (callback) callback();
+      }
+    } catch (e) {
+      console.error('Error in setupRankingRealTimeListener:', e);
     }
+  }, (error) => {
+    console.error('Firebase read error for ranking:', error);
   });
 }
 
