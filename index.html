@@ -469,24 +469,24 @@ function setupQuestionsRealTimeListener(callback) {
   });
 }
 
-async function loadProgress() {
+async function loadProgress(santaName) {
   try {
-    const snapshot = await db.ref(PROGRESS_KEY).once('value');
+    const snapshot = await db.ref(PROGRESS_KEY + '/' + encodeURIComponent(santaName)).once('value');
     return snapshot.val();
   } catch (e) { return null; }
 }
 
 async function saveProgress(state) {
   try {
-    await db.ref(PROGRESS_KEY).set(state);
+    await db.ref(PROGRESS_KEY + '/' + encodeURIComponent(state.santaName)).set(state);
   } catch (e) {
     showToast('進捗の保存に失敗しました');
   }
 }
 
-async function clearProgress() {
+async function clearProgress(santaName) {
   try {
-    await db.ref(PROGRESS_KEY).remove();
+    await db.ref(PROGRESS_KEY + '/' + encodeURIComponent(santaName)).remove();
   } catch (e) {}
 }
 
@@ -620,8 +620,8 @@ async function goHome() {
   setupQuestionsRealTimeListener(() => {
     renderSettingsQuestionList();
   });
-  progress = await loadProgress();
-  document.getElementById('btn-resume').classList.toggle('hidden', !progress);
+  progress = null;
+  document.getElementById('btn-resume').classList.add('hidden');
   renderFamily('home-family-illustration', 7);
   showScreen('screen-home');
   refreshIcons();
@@ -695,20 +695,17 @@ async function startNewQuiz() {
   renderQuizQuestion(questions[0], 0);
 }
 async function resumeQuiz() {
-  const saved = await loadProgress();
-  if (!saved) return;
   pendingAdminAction = 'resume';
   document.getElementById('name-input').value = '';
   document.getElementById('name-error').classList.add('hidden');
-  document.getElementById('name-input').placeholder = '前回のサンタネーム: ' + escapeHtml(saved.santaName);
+  document.getElementById('name-input').placeholder = 'サンタネームを入力';
   showScreen('screen-name-entry');
 }
 
 async function proceedWithResume(inputName) {
-  const saved = await loadProgress();
-  if (!saved) return false;
-  if (inputName.trim() !== saved.santaName.trim()) {
-    showToast('前回のサンタネームと異なります');
+  const saved = await loadProgress(inputName);
+  if (!saved) {
+    showToast('このサンタネームのセーブデータが見つかりません');
     return false;
   }
   questions = await loadQuestions();
@@ -992,7 +989,7 @@ async function saveProgressAndExit() {
   await goHome();
 }
 async function finishQuiz() {
-  await clearProgress();
+  await clearProgress(quizSession.santaName);
   await addRankingEntry(quizSession.santaName, quizSession.cumulativeScore, quizSession.cumulativeMaxScore);
   renderResultScreen(quizSession);
   showScreen('screen-result');
@@ -1324,7 +1321,6 @@ function wireEventListeners() {
 /* ==================== 起動 ==================== */
 document.addEventListener('DOMContentLoaded', async () => {
   questions = await loadQuestions();
-  progress = await loadProgress();
   initSnowfall(45);
   wireEventListeners();
   await goHome();
