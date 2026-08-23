@@ -431,8 +431,6 @@ function compareQuestions(a, b) {
   return a.order - b.order;
 }
 
-let questionsRealTimeListener = null;
-let rankingRealTimeListener = null;
 
 async function loadQuestions() {
   try {
@@ -459,8 +457,7 @@ async function saveQuestions(list) {
 }
 
 function setupQuestionsRealTimeListener(callback) {
-  if (questionsRealTimeListener) questionsRealTimeListener();
-  questionsRealTimeListener = db.ref(QUESTIONS_KEY).on('value', async (snapshot) => {
+  db.ref(QUESTIONS_KEY).on('value', (snapshot) => {
     try {
       const data = snapshot.val();
       if (data !== null && Array.isArray(data)) {
@@ -514,8 +511,7 @@ async function saveRanking(list) {
 }
 
 function setupRankingRealTimeListener(callback) {
-  if (rankingRealTimeListener) rankingRealTimeListener();
-  rankingRealTimeListener = db.ref(RANKING_KEY).on('value', async (snapshot) => {
+  db.ref(RANKING_KEY).on('value', (snapshot) => {
     try {
       const data = snapshot.val();
       if (data !== null && Array.isArray(data)) {
