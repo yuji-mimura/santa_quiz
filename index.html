@@ -6,6 +6,8 @@
 <title>チャリティーサンタ北東京支部 ご家庭班クイズ</title>
 <script src="https://cdn.tailwindcss.com" defer></script>
 <script src="https://unpkg.com/lucide@latest" defer></script>
+<script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
 <style>
@@ -353,6 +355,20 @@
 <div id="toast" class="hidden"></div>
 
 <script>
+/* ==================== Firebase初期化 ==================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCSSJyHRgX1CQ-xc8bhf5tKPmUVko-VUSY",
+  authDomain: "santaquiz-b9c2b.firebaseapp.com",
+  databaseURL: "https://santaquiz-b9c2b-default-rtdb.firebaseio.com",
+  projectId: "santaquiz-b9c2b",
+  storageBucket: "santaquiz-b9c2b.appspot.com",
+  messagingSenderId: "36572630441",
+  appId: "1:36572630441:web:b80a2fffcf399fff0c08b8",
+  measurementId: "G-8KELZL7STW"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
 /* ==================== 定数・データ ==================== */
 const QUESTIONS_KEY = 'csq_questions';
 const PROGRESS_KEY = 'csq_progress';
@@ -414,56 +430,97 @@ function compareQuestions(a, b) {
   if (aPractice !== bPractice) return aPractice - bPractice;
   return a.order - b.order;
 }
-function loadQuestions() {
-  let raw;
+
+let questionsRealTimeListener = null;
+let rankingRealTimeListener = null;
+
+async function loadQuestions() {
   try {
-    raw = localStorage.getItem(QUESTIONS_KEY);
+    const snapshot = await db.ref(QUESTIONS_KEY).once('value');
+    const data = snapshot.val();
+    if (data === null) {
+      await saveQuestions(SEED_QUESTIONS);
+      return SEED_QUESTIONS.slice().sort(compareQuestions);
+    }
+    if (!Array.isArray(data)) throw new Error('invalid');
+    return data.slice().sort(compareQuestions);
   } catch (e) {
-    showToast('保存データの読み込みに失敗しました');
+    showToast('問題データの読み込みに失敗しました');
     return SEED_QUESTIONS.slice().sort(compareQuestions);
-  }
-  if (raw === null) { saveQuestions(SEED_QUESTIONS); return SEED_QUESTIONS.slice().sort(compareQuestions); }
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) throw new Error('invalid');
-    return parsed.slice().sort(compareQuestions);
-  } catch (e) {
-    // 壊れたデータを誤って上書きしないよう、元のキーには触れず退避コピーだけ残す
-    try { localStorage.setItem(QUESTIONS_KEY + '_corrupt_backup', raw); } catch (e2) {}
-    showToast('保存済みの問題データを読み込めませんでした(データは保持しています。設定画面から復旧してください)');
-    return SEED_QUESTIONS.slice().sort(compareQuestions);
-  }
-}
-function saveQuestions(list) {
-  try {
-    localStorage.setItem(QUESTIONS_KEY, JSON.stringify(list));
-  } catch (e) {
-    showToast('問題の保存に失敗しました。ブラウザの空き容量を確認してください');
   }
 }
 
-function loadProgress() {
+async function saveQuestions(list) {
   try {
-    const raw = localStorage.getItem(PROGRESS_KEY);
-    return raw ? JSON.parse(raw) : null;
+    await db.ref(QUESTIONS_KEY).set(list);
+  } catch (e) {
+    showToast('問題の保存に失敗しました');
+  }
+}
+
+function setupQuestionsRealTimeListener(callback) {
+  if (questionsRealTimeListener) questionsRealTimeListener();
+  questionsRealTimeListener = db.ref(QUESTIONS_KEY).on('value', async (snapshot) => {
+    const data = snapshot.val();
+    if (data !== null && Array.isArray(data)) {
+      questions = data.slice().sort(compareQuestions);
+      if (callback) callback();
+    }
+  });
+}
+
+async function loadProgress() {
+  try {
+    const snapshot = await db.ref(PROGRESS_KEY).once('value');
+    return snapshot.val();
   } catch (e) { return null; }
 }
-function saveProgress(state) { localStorage.setItem(PROGRESS_KEY, JSON.stringify(state)); }
-function clearProgress() { localStorage.removeItem(PROGRESS_KEY); }
 
-function loadRanking() {
+async function saveProgress(state) {
   try {
-    const raw = localStorage.getItem(RANKING_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(parsed)) return [];
+    await db.ref(PROGRESS_KEY).set(state);
+  } catch (e) {
+    showToast('進捗の保存に失敗しました');
+  }
+}
+
+async function clearProgress() {
+  try {
+    await db.ref(PROGRESS_KEY).remove();
+  } catch (e) {}
+}
+
+async function loadRanking() {
+  try {
+    const snapshot = await db.ref(RANKING_KEY).once('value');
+    const data = snapshot.val();
+    const parsed = data ? (Array.isArray(data) ? data : []) : [];
     return parsed.slice().sort((a, b) => b.score - a.score);
   } catch (e) { return []; }
 }
-function saveRanking(list) { localStorage.setItem(RANKING_KEY, JSON.stringify(list.slice().sort((a, b) => b.score - a.score))); }
-function addRankingEntry(name, score, maxScore) {
-  const list = loadRanking();
+
+async function saveRanking(list) {
+  try {
+    await db.ref(RANKING_KEY).set(list.slice().sort((a, b) => b.score - a.score));
+  } catch (e) {
+    showToast('ランキングの保存に失敗しました');
+  }
+}
+
+function setupRankingRealTimeListener(callback) {
+  if (rankingRealTimeListener) rankingRealTimeListener();
+  rankingRealTimeListener = db.ref(RANKING_KEY).on('value', async (snapshot) => {
+    const data = snapshot.val();
+    if (data !== null && Array.isArray(data)) {
+      if (callback) callback();
+    }
+  });
+}
+
+async function addRankingEntry(name, score, maxScore) {
+  const list = await loadRanking();
   list.push({ id: uid(), santaName: name, score, maxScore, date: Date.now() });
-  saveRanking(list);
+  await saveRanking(list);
 }
 
 /* ==================== お母さんイラスト(絵文字の顔+体、クリスマス背景) ==================== */
@@ -558,9 +615,12 @@ function showScreen(id) {
   currentScreen = id;
   window.scrollTo(0, 0);
 }
-function goHome() {
-  questions = loadQuestions();
-  progress = loadProgress();
+async function goHome() {
+  questions = await loadQuestions();
+  setupQuestionsRealTimeListener(() => {
+    renderSettingsQuestionList();
+  });
+  progress = await loadProgress();
   document.getElementById('btn-resume').classList.toggle('hidden', !progress);
   renderFamily('home-family-illustration', 7);
   showScreen('screen-home');
@@ -571,8 +631,9 @@ function goToNameEntry() {
   document.getElementById('name-error').classList.add('hidden');
   showScreen('screen-name-entry');
 }
-function goToRanking() {
-  renderRankingList();
+async function goToRanking() {
+  await renderRankingList();
+  setupRankingRealTimeListener(() => renderRankingList());
   showScreen('screen-ranking');
 }
 
@@ -591,13 +652,13 @@ function closeAdminModal() {
   modal.classList.remove('flex');
   pendingAdminAction = null;
 }
-function checkAdminPassword() {
+async function checkAdminPassword() {
   const val = document.getElementById('admin-password-input').value.trim();
   if (val === ADMIN_PASSWORD) {
     const action = pendingAdminAction;
     closeAdminModal();
-    if (action === 'settings') goToSettings();
-    else if (action === 'resetRanking') performRankingReset();
+    if (action === 'settings') await goToSettings();
+    else if (action === 'resetRanking') await performRankingReset();
   } else {
     document.getElementById('admin-password-error').classList.remove('hidden');
     const input = document.getElementById('admin-password-input');
@@ -608,13 +669,13 @@ function checkAdminPassword() {
 }
 
 /* ==================== クイズ進行 ==================== */
-function startNewQuiz() {
+async function startNewQuiz() {
   const name = document.getElementById('name-input').value.trim();
   if (!name) {
     document.getElementById('name-error').classList.remove('hidden');
     return;
   }
-  questions = loadQuestions();
+  questions = await loadQuestions();
   if (questions.length === 0) {
     showToast('問題が登録されていません。設定から問題を追加してください');
     return;
@@ -623,14 +684,14 @@ function startNewQuiz() {
   showScreen('screen-quiz');
   renderQuizQuestion(questions[0], 0);
 }
-function resumeQuiz() {
-  const saved = loadProgress();
+async function resumeQuiz() {
+  const saved = await loadProgress();
   if (!saved) return;
-  questions = loadQuestions();
+  questions = await loadQuestions();
   quizSession = JSON.parse(JSON.stringify(saved));
   if (typeof quizSession.emotionLevel !== 'number') quizSession.emotionLevel = NEUTRAL_EMOTION_LEVEL;
   showScreen('screen-quiz');
-  if (quizSession.currentIndex >= questions.length) { finishQuiz(); return; }
+  if (quizSession.currentIndex >= questions.length) { await finishQuiz(); return; }
   renderQuizQuestion(questions[quizSession.currentIndex], quizSession.currentIndex);
 }
 function getScoredQuestions() { return questions.filter(q => !q.isPractice); }
@@ -899,15 +960,15 @@ function proceedAfterAnswer() {
   if (quizSession.currentIndex >= questions.length) finishQuiz();
   else renderQuizQuestion(questions[quizSession.currentIndex], quizSession.currentIndex);
 }
-function saveProgressAndExit() {
+async function saveProgressAndExit() {
   quizSession.savedAt = Date.now();
-  saveProgress(quizSession);
+  await saveProgress(quizSession);
   showToast('途中経過を保存しました');
-  goHome();
+  await goHome();
 }
-function finishQuiz() {
-  clearProgress();
-  addRankingEntry(quizSession.santaName, quizSession.cumulativeScore, quizSession.cumulativeMaxScore);
+async function finishQuiz() {
+  await clearProgress();
+  await addRankingEntry(quizSession.santaName, quizSession.cumulativeScore, quizSession.cumulativeMaxScore);
   renderResultScreen(quizSession);
   showScreen('screen-result');
 }
@@ -916,8 +977,8 @@ function renderResultScreen(session) {
   document.getElementById('result-score').textContent = session.cumulativeScore + ' / ' + session.cumulativeMaxScore + ' 点';
   renderFamily('result-family-illustration', typeof session.emotionLevel === 'number' ? session.emotionLevel : NEUTRAL_EMOTION_LEVEL);
 }
-function renderRankingList() {
-  const list = loadRanking();
+async function renderRankingList() {
+  const list = await loadRanking();
   const container = document.getElementById('ranking-list');
   container.innerHTML = '';
   if (list.length === 0) {
@@ -942,16 +1003,16 @@ function renderRankingList() {
 }
 
 /* ==================== 設定画面(管理者CRUD) ==================== */
-function goToSettings() {
-  questions = loadQuestions();
+async function goToSettings() {
+  questions = await loadQuestions();
   renderSettingsQuestionList();
   resetQuestionForm();
   showScreen('screen-settings');
 }
-function performRankingReset() {
-  saveRanking([]);
+async function performRankingReset() {
+  await saveRanking([]);
   showToast('ランキングデータを初期化しました');
-  if (currentScreen === 'screen-ranking') renderRankingList();
+  if (currentScreen === 'screen-ranking') await renderRankingList();
 }
 const TYPE_LABEL = { single: '択一', multi: '複数選択', numeric: '数値', ordering: '並べ替え' };
 function renderSettingsQuestionList() {
@@ -1099,7 +1160,7 @@ function addOrderingItemRow() {
   orderingRows.push({ key: nextLetter(orderingRows.map(r => r.key)), label: '' });
   renderOrderingRows();
 }
-function saveQuestionForm(event) {
+async function saveQuestionForm(event) {
   event.preventDefault();
   const order = parseInt(document.getElementById('form-order').value, 10);
   const adminLabel = document.getElementById('form-admin-label').value.trim();
@@ -1141,15 +1202,15 @@ function saveQuestionForm(event) {
   if (editingQuestionId) questions = questions.map(q => (q.id === editingQuestionId ? question : q));
   else questions.push(question);
 
-  saveQuestions(questions);
+  await saveQuestions(questions);
   resetQuestionForm();
   renderSettingsQuestionList();
   showToast('保存しました');
 }
-function deleteQuestion(id) {
+async function deleteQuestion(id) {
   if (!confirm('この問題を削除しますか?')) return;
   questions = questions.filter(q => q.id !== id);
-  saveQuestions(questions);
+  await saveQuestions(questions);
   renderSettingsQuestionList();
 }
 
@@ -1174,7 +1235,7 @@ function exportQuestions() {
 }
 function importQuestionsFromFile(file) {
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     let parsed;
     try {
       parsed = JSON.parse(reader.result);
@@ -1188,7 +1249,7 @@ function importQuestionsFromFile(file) {
     }
     if (!confirm('現在の問題一覧(' + questions.length + '件)を、読み込んだ' + parsed.length + '件の問題で置き換えます。よろしいですか?')) return;
     questions = parsed.map(q => Object.assign({}, q, { id: q.id || uid() }));
-    saveQuestions(questions);
+    await saveQuestions(questions);
     renderSettingsQuestionList();
     showToast('問題を読み込みました');
   };
@@ -1200,27 +1261,27 @@ function importQuestionsFromFile(file) {
 function wireEventListeners() {
   document.getElementById('btn-open-settings').addEventListener('click', () => openAdminModal('settings'));
   document.getElementById('btn-start-new').addEventListener('click', goToNameEntry);
-  document.getElementById('btn-resume').addEventListener('click', resumeQuiz);
-  document.getElementById('btn-view-ranking').addEventListener('click', goToRanking);
+  document.getElementById('btn-resume').addEventListener('click', () => resumeQuiz());
+  document.getElementById('btn-view-ranking').addEventListener('click', () => goToRanking());
 
-  document.getElementById('form-name-entry').addEventListener('submit', e => { e.preventDefault(); startNewQuiz(); });
-  document.getElementById('btn-name-back').addEventListener('click', goHome);
+  document.getElementById('form-name-entry').addEventListener('submit', e => { e.preventDefault(); startNewQuiz().catch(err => console.error(err)); });
+  document.getElementById('btn-name-back').addEventListener('click', () => goHome());
 
   document.getElementById('quiz-answer-form').addEventListener('submit', e => { e.preventDefault(); submitAnswer(); });
   document.getElementById('btn-next-question').addEventListener('click', proceedAfterAnswer);
-  document.getElementById('btn-save-exit').addEventListener('click', saveProgressAndExit);
+  document.getElementById('btn-save-exit').addEventListener('click', () => saveProgressAndExit());
 
-  document.getElementById('btn-result-ranking').addEventListener('click', goToRanking);
-  document.getElementById('btn-result-home').addEventListener('click', goHome);
-  document.getElementById('btn-ranking-home').addEventListener('click', goHome);
+  document.getElementById('btn-result-ranking').addEventListener('click', () => goToRanking());
+  document.getElementById('btn-result-home').addEventListener('click', () => goHome());
+  document.getElementById('btn-ranking-home').addEventListener('click', () => goHome());
 
-  document.getElementById('form-admin-auth').addEventListener('submit', e => { e.preventDefault(); checkAdminPassword(); });
+  document.getElementById('form-admin-auth').addEventListener('submit', e => { e.preventDefault(); checkAdminPassword().catch(err => console.error(err)); });
   document.getElementById('btn-admin-cancel').addEventListener('click', closeAdminModal);
 
-  document.getElementById('btn-settings-home').addEventListener('click', goHome);
+  document.getElementById('btn-settings-home').addEventListener('click', () => goHome());
   document.getElementById('btn-add-question').addEventListener('click', () => openQuestionForm(null));
   document.getElementById('btn-cancel-form').addEventListener('click', resetQuestionForm);
-  document.getElementById('question-form').addEventListener('submit', saveQuestionForm);
+  document.getElementById('question-form').addEventListener('submit', e => { saveQuestionForm(e).catch(err => console.error(err)); });
   document.getElementById('form-type').addEventListener('change', onQuestionTypeChange);
   document.getElementById('btn-add-choice-row').addEventListener('click', addChoiceRow);
   document.getElementById('btn-add-ordering-row').addEventListener('click', addOrderingItemRow);
@@ -1236,12 +1297,12 @@ function wireEventListeners() {
 }
 
 /* ==================== 起動 ==================== */
-document.addEventListener('DOMContentLoaded', () => {
-  questions = loadQuestions();
-  progress = loadProgress();
+document.addEventListener('DOMContentLoaded', async () => {
+  questions = await loadQuestions();
+  progress = await loadProgress();
   initSnowfall(45);
   wireEventListeners();
-  goHome();
+  await goHome();
   refreshIcons();
 });
 </script>
