@@ -647,6 +647,21 @@ async function checkAnySaveDataExists() {
     return false;
   }
 }
+
+async function getAllSavedPlayers() {
+  try {
+    const snapshot = await db.ref(PROGRESS_KEY).once('value');
+    const data = snapshot.val();
+    if (data === null) return [];
+    return Object.keys(data).map(key => {
+      const decoded = decodeURIComponent(key);
+      return { key, name: decoded };
+    });
+  } catch (e) {
+    console.error('Error getting saved players:', e);
+    return [];
+  }
+}
 function goToNameEntry() {
   document.getElementById('name-input').value = '';
   document.getElementById('name-error').classList.add('hidden');
@@ -716,11 +731,68 @@ async function startNewQuiz() {
   renderQuizQuestion(questions[0], 0);
 }
 async function resumeQuiz() {
-  pendingAdminAction = 'resume';
-  document.getElementById('name-input').value = '';
-  document.getElementById('name-error').classList.add('hidden');
-  document.getElementById('name-input').placeholder = 'サンタネームを入力';
+  const savedPlayers = await getAllSavedPlayers();
+
+  if (savedPlayers.length === 0) {
+    showToast('セーブデータがありません');
+    return;
+  }
+
+  if (savedPlayers.length === 1) {
+    // セーブデータが1つのみの場合は、そのまま再開
+    pendingAdminAction = 'resume';
+    document.getElementById('name-input').value = savedPlayers[0].name;
+    await proceedWithResume(savedPlayers[0].name);
+    return;
+  }
+
+  // 複数のセーブデータがある場合は、プレイヤー選択画面を表示
+  showPlayerSelectionScreen(savedPlayers);
+}
+
+function showPlayerSelectionScreen(players) {
+  const container = document.getElementById('answer-content');
+  container.innerHTML = '<div class="text-center"><p class="text-lg font-bold mb-4">続きから再開するプレイヤーを選択</p></div>';
+
+  const playerList = document.createElement('div');
+  playerList.className = 'space-y-2';
+
+  players.forEach(player => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'choice-card w-full border-4 rounded-2xl p-4 text-lg font-bold bg-white text-left';
+    btn.textContent = player.name;
+    btn.addEventListener('click', () => {
+      proceedWithResumeFromSelection(player.name);
+    });
+    playerList.appendChild(btn);
+  });
+
+  const backBtn = document.createElement('button');
+  backBtn.type = 'button';
+  backBtn.className = 'btn-xmas w-full rounded-2xl py-3 font-bold bg-white mt-4';
+  backBtn.textContent = 'ホームに戻る';
+  backBtn.addEventListener('click', goHome);
+  playerList.appendChild(backBtn);
+
+  container.appendChild(playerList);
   showScreen('screen-name-entry');
+  document.getElementById('form-name-entry').style.display = 'none';
+  document.getElementById('answer-content').parentElement.classList.remove('hidden');
+}
+
+async function proceedWithResumeFromSelection(playerName) {
+  const saved = await loadProgress(playerName);
+  if (!saved) {
+    showToast('セーブデータが見つかりません');
+    return;
+  }
+  questions = await loadQuestions();
+  quizSession = JSON.parse(JSON.stringify(saved));
+  if (typeof quizSession.emotionLevel !== 'number') quizSession.emotionLevel = NEUTRAL_EMOTION_LEVEL;
+  showScreen('screen-quiz');
+  if (quizSession.currentIndex >= questions.length) { await finishQuiz(); return; }
+  renderQuizQuestion(questions[quizSession.currentIndex], quizSession.currentIndex);
 }
 
 async function proceedWithResume(inputName) {
