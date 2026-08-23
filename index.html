@@ -675,6 +675,16 @@ async function startNewQuiz() {
     document.getElementById('name-error').classList.remove('hidden');
     return;
   }
+
+  if (pendingAdminAction === 'resume') {
+    pendingAdminAction = null;
+    const success = await proceedWithResume(name);
+    if (!success) {
+      document.getElementById('name-error').classList.remove('hidden');
+    }
+    return;
+  }
+
   questions = await loadQuestions();
   if (questions.length === 0) {
     showToast('問題が登録されていません。設定から問題を追加してください');
@@ -687,12 +697,27 @@ async function startNewQuiz() {
 async function resumeQuiz() {
   const saved = await loadProgress();
   if (!saved) return;
+  pendingAdminAction = 'resume';
+  document.getElementById('name-input').value = '';
+  document.getElementById('name-error').classList.add('hidden');
+  document.getElementById('name-input').placeholder = '前回のサンタネーム: ' + escapeHtml(saved.santaName);
+  showScreen('screen-name-entry');
+}
+
+async function proceedWithResume(inputName) {
+  const saved = await loadProgress();
+  if (!saved) return false;
+  if (inputName.trim() !== saved.santaName.trim()) {
+    showToast('前回のサンタネームと異なります');
+    return false;
+  }
   questions = await loadQuestions();
   quizSession = JSON.parse(JSON.stringify(saved));
   if (typeof quizSession.emotionLevel !== 'number') quizSession.emotionLevel = NEUTRAL_EMOTION_LEVEL;
   showScreen('screen-quiz');
-  if (quizSession.currentIndex >= questions.length) { await finishQuiz(); return; }
+  if (quizSession.currentIndex >= questions.length) { await finishQuiz(); return true; }
   renderQuizQuestion(questions[quizSession.currentIndex], quizSession.currentIndex);
+  return true;
 }
 function getScoredQuestions() { return questions.filter(q => !q.isPractice); }
 function renderQuizQuestion(question, index) {
