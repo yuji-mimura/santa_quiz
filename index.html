@@ -620,11 +620,24 @@ async function goHome() {
   setupQuestionsRealTimeListener(() => {
     renderSettingsQuestionList();
   });
-  progress = null;
-  document.getElementById('btn-resume').classList.add('hidden');
+
+  // セーブデータが存在するかをチェック
+  const hasAnySaveData = await checkAnySaveDataExists();
+  document.getElementById('btn-resume').classList.toggle('hidden', !hasAnySaveData);
+
   renderFamily('home-family-illustration', 7);
   showScreen('screen-home');
   refreshIcons();
+}
+
+async function checkAnySaveDataExists() {
+  try {
+    const snapshot = await db.ref(PROGRESS_KEY).once('value');
+    const data = snapshot.val();
+    return data !== null && Object.keys(data).length > 0;
+  } catch (e) {
+    return false;
+  }
 }
 function goToNameEntry() {
   document.getElementById('name-input').value = '';
