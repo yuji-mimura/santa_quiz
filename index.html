@@ -1172,8 +1172,15 @@ async function performRankingReset() {
 
 async function clearAllProgress() {
   try {
-    await db.ref(PROGRESS_KEY).remove();
+    const snapshot = await db.ref(PROGRESS_KEY).once('value');
+    const data = snapshot.val();
+    if (data === null) return;
+    // セキュリティルール上、csq_progress直下への一括書き込みはできないため、
+    // プレイヤーごとのキーを個別に削除する
+    const deletePromises = Object.keys(data).map(key => db.ref(PROGRESS_KEY + '/' + key).remove());
+    await Promise.all(deletePromises);
   } catch (e) {
+    console.error('Error clearing progress:', e);
     showToast('セーブデータの初期化に失敗しました');
   }
 }
