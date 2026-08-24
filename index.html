@@ -922,8 +922,8 @@ function renderOrderingList(question, content) {
     handle.textContent = '⠿';
     handle.setAttribute('aria-hidden', 'true');
     const label = document.createElement('span');
-    label.className = 'font-bold text-xl flex-1';
-    label.textContent = item.key;
+    label.className = 'font-bold text-lg flex-1 whitespace-pre-wrap';
+    label.textContent = item.label;
     const btnGroup = document.createElement('div');
     btnGroup.className = 'flex gap-2';
     const upBtn = document.createElement('button');
