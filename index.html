@@ -186,7 +186,7 @@
         <p id="feedback-user-answer" class="text-2xl font-black mb-4"></p>
         <p class="text-lg font-bold mb-1">正解</p>
         <p id="feedback-correct-answer" class="text-2xl font-black mb-4" style="color:var(--xmas-gold)"></p>
-        <div id="feedback-explanation-row" class="hidden mb-4">
+        <div id="feedback-explanation-row" class="hidden mb-4 text-left">
           <p class="text-lg font-bold mb-1">解説</p>
           <p id="feedback-explanation" class="text-base font-bold whitespace-pre-wrap"></p>
         </div>
@@ -730,15 +730,6 @@ async function startNewQuiz() {
     return;
   }
 
-  if (pendingAdminAction === 'resume') {
-    pendingAdminAction = null;
-    const success = await proceedWithResume(name);
-    if (!success) {
-      document.getElementById('name-error').classList.remove('hidden');
-    }
-    return;
-  }
-
   questions = await loadQuestions();
   if (questions.length === 0) {
     showToast('問題が登録されていません。設定から問題を追加してください');
@@ -756,15 +747,7 @@ async function resumeQuiz() {
     return;
   }
 
-  if (savedPlayers.length === 1) {
-    // セーブデータが1つのみの場合は、そのまま再開
-    pendingAdminAction = 'resume';
-    document.getElementById('name-input').value = savedPlayers[0].name;
-    await proceedWithResume(savedPlayers[0].name);
-    return;
-  }
-
-  // 複数のセーブデータがある場合は、プレイヤー選択画面を表示
+  // セーブデータが1つの場合でも、必ずプレイヤーを選択してから再開する
   showPlayerSelectionScreen(savedPlayers);
 }
 
@@ -843,19 +826,6 @@ async function proceedWithResumeFromSelection(playerName) {
   renderQuizQuestion(questions[quizSession.currentIndex], quizSession.currentIndex);
 }
 
-async function proceedWithResume(inputName) {
-  const saved = await loadProgress(inputName);
-  if (!saved) {
-    showToast('このサンタネームのセーブデータが見つかりません');
-    return false;
-  }
-  questions = await loadQuestions();
-  quizSession = normalizeResumedSession(JSON.parse(JSON.stringify(saved)));
-  showScreen('screen-quiz');
-  if (quizSession.currentIndex >= questions.length) { await finishQuiz(); return true; }
-  renderQuizQuestion(questions[quizSession.currentIndex], quizSession.currentIndex);
-  return true;
-}
 function getScoredQuestions() { return questions.filter(q => !q.isPractice); }
 function renderQuizQuestion(question, index) {
   currentQuestion = question;
