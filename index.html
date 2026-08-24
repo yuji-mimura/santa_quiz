@@ -697,6 +697,11 @@ function openAdminModal(action) {
   const modal = document.getElementById('modal-admin-auth');
   modal.classList.remove('hidden');
   modal.classList.add('flex');
+  // モーダル表示直後は要素がまだ描画されておらずフォーカスが当たらないことがあるため、
+  // 描画完了を待ってからフォーカスする(先頭の1文字が入力されない不具合を防ぐ)
+  requestAnimationFrame(() => {
+    document.getElementById('admin-password-input').focus();
+  });
 }
 function closeAdminModal() {
   const modal = document.getElementById('modal-admin-auth');
