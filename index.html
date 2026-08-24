@@ -82,9 +82,6 @@
     40%, 60% { transform: translateX(8px); }
   }
   .shake { animation: shake .5s; }
-  .password-input {
-    -webkit-text-security: disc;
-  }
   .ordering-item { cursor: grab; transition: opacity .15s ease, outline .1s ease; }
   .ordering-item.dragging { opacity: 0.4; cursor: grabbing; }
   .ordering-item.drag-over { outline: 3px dashed var(--xmas-green); outline-offset: 2px; }
@@ -343,7 +340,7 @@
 <div id="modal-admin-auth" class="hidden fixed inset-0 bg-black/60 z-50 items-center justify-center px-4">
   <form id="form-admin-auth" class="card-panel rounded-3xl p-6 w-full max-w-sm">
     <h3 class="text-xl font-black mb-4 text-center">🔑 管理者パスワード</h3>
-    <input id="admin-password-input" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="パスワード" class="password-input w-full border-4 rounded-2xl p-3 text-lg text-center mb-2" style="border-color:var(--outline-brown)">
+    <input id="admin-password-input" type="password" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="パスワード" class="w-full border-4 rounded-2xl p-3 text-lg text-center mb-2" style="border-color:var(--outline-brown)">
     <p id="admin-password-error" class="text-red-600 font-bold text-center mb-2 hidden">パスワードが違います</p>
     <div class="flex gap-3 mt-3">
       <button type="button" id="btn-admin-cancel" class="btn-xmas flex-1 rounded-xl py-2 font-bold bg-white">キャンセル</button>
