@@ -1085,12 +1085,22 @@ function showAnswerFeedback(earnedScore, totalScore, isLastQuestion, isPractice,
   }
   document.getElementById('feedback-earned-score').textContent = isPractice ? '(得点対象外)' : earnedScore + ' / ' + maxPoints + ' 点';
   document.getElementById('feedback-total-score').textContent = totalScore + ' / ' + totalMaxScore + ' 点';
-  document.getElementById('btn-next-question').textContent = isLastQuestion ? '結果を見る' : (isPracticeTransition ? '本番を始める' : '次の問題へ');
+  const nextBtn = document.getElementById('btn-next-question');
+  nextBtn.textContent = isLastQuestion ? '結果を見る' : (isPracticeTransition ? '本番を始める' : '次の問題へ');
+  nextBtn.disabled = false;
   document.getElementById('answer-feedback').classList.remove('hidden');
 }
 function proceedAfterAnswer() {
-  if (quizSession.currentIndex >= questions.length) finishQuiz();
-  else renderQuizQuestion(questions[quizSession.currentIndex], quizSession.currentIndex);
+  if (quizSession.currentIndex >= questions.length) {
+    // 非同期処理(Firebase保存)の完了前に連打されるとランキングへの
+    // 二重登録が発生するため、押した瞬間にボタンを無効化しておく
+    const btn = document.getElementById('btn-next-question');
+    if (btn.disabled) return;
+    btn.disabled = true;
+    finishQuiz();
+  } else {
+    renderQuizQuestion(questions[quizSession.currentIndex], quizSession.currentIndex);
+  }
 }
 async function saveProgressAndExit() {
   quizSession.savedAt = Date.now();
