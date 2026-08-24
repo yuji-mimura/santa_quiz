@@ -817,6 +817,17 @@ function showPlayerSelectionScreen(players) {
   showScreen('screen-name-entry');
 }
 
+function normalizeResumedSession(session) {
+  // Firebase Realtime Database は空配列を保存できず削除してしまうため、
+  // 読み込み後にフィールドが欠けていた場合は初期値で補う
+  if (!Array.isArray(session.answers)) session.answers = [];
+  if (typeof session.emotionLevel !== 'number') session.emotionLevel = NEUTRAL_EMOTION_LEVEL;
+  if (typeof session.currentIndex !== 'number') session.currentIndex = 0;
+  if (typeof session.cumulativeScore !== 'number') session.cumulativeScore = 0;
+  if (typeof session.cumulativeMaxScore !== 'number') session.cumulativeMaxScore = 0;
+  return session;
+}
+
 async function proceedWithResumeFromSelection(playerName) {
   const saved = await loadProgress(playerName);
   if (!saved) {
@@ -824,8 +835,7 @@ async function proceedWithResumeFromSelection(playerName) {
     return;
   }
   questions = await loadQuestions();
-  quizSession = JSON.parse(JSON.stringify(saved));
-  if (typeof quizSession.emotionLevel !== 'number') quizSession.emotionLevel = NEUTRAL_EMOTION_LEVEL;
+  quizSession = normalizeResumedSession(JSON.parse(JSON.stringify(saved)));
   showScreen('screen-quiz');
   if (quizSession.currentIndex >= questions.length) { await finishQuiz(); return; }
   renderQuizQuestion(questions[quizSession.currentIndex], quizSession.currentIndex);
@@ -838,8 +848,7 @@ async function proceedWithResume(inputName) {
     return false;
   }
   questions = await loadQuestions();
-  quizSession = JSON.parse(JSON.stringify(saved));
-  if (typeof quizSession.emotionLevel !== 'number') quizSession.emotionLevel = NEUTRAL_EMOTION_LEVEL;
+  quizSession = normalizeResumedSession(JSON.parse(JSON.stringify(saved)));
   showScreen('screen-quiz');
   if (quizSession.currentIndex >= questions.length) { await finishQuiz(); return true; }
   renderQuizQuestion(questions[quizSession.currentIndex], quizSession.currentIndex);
