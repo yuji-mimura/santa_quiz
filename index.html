@@ -84,7 +84,13 @@
   .shake { animation: shake .5s; }
   .ordering-item { cursor: grab; transition: opacity .15s ease, outline .1s ease; }
   .ordering-item.dragging { opacity: 0.4; cursor: grabbing; }
-  .ordering-item.drag-over { outline: 3px dashed var(--xmas-green); outline-offset: 2px; }
+  .ordering-gap {
+    height: 10px;
+    margin: 2px 0;
+    border-radius: 6px;
+    transition: background-color .15s ease, height .15s ease;
+  }
+  .ordering-gap.active { background: var(--xmas-green); height: 16px; }
   #snow-container { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
   .snowflake {
     position: absolute;
@@ -407,7 +413,6 @@ let toastTimer = null;
 /* ==================== ユーティリティ ==================== */
 function uid() { return 'q_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
 function clamp(n, min, max) { return Math.min(max, Math.max(min, n)); }
-function arraysEqual(a, b) { return a.length === b.length && a.every((v, i) => v === b[i]); }
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -588,9 +593,11 @@ function renderFamily(containerId, level) {
 const NEUTRAL_EMOTION_LEVEL = 5;
 function stepEmotionLevel(currentLevel, score, maxPoints) {
   if (!(maxPoints > 0)) return currentLevel;
-  if (score >= maxPoints) return clamp(currentLevel + 1, 0, 9);
-  if (score <= 0) return clamp(currentLevel - 2, 0, 9);
-  return clamp(currentLevel - 1, 0, 9);
+  const ratio = score / maxPoints;
+  if (ratio >= 1) return clamp(currentLevel + 1, 0, 9);
+  if (ratio >= 0.7) return currentLevel; // ほぼ正解なら表情は変えない
+  if (ratio >= 0.4) return clamp(currentLevel - 1, 0, 9);
+  return clamp(currentLevel - 2, 0, 9);
 }
 
 /* ==================== 雪アニメーション ==================== */
@@ -910,7 +917,36 @@ function renderOrderingUI(question, content) {
 function renderOrderingList(question, content) {
   content.innerHTML = '';
   const list = document.createElement('ul');
-  list.className = 'space-y-2';
+  list.className = 'flex flex-col';
+
+  function moveDraggedTo(insertIndex) {
+    const from = window.__dragIndex;
+    window.__dragIndex = null;
+    if (from === undefined || from === null) return;
+    let insertAt = insertIndex;
+    const moved = orderKeys.splice(from, 1)[0];
+    if (from < insertAt) insertAt -= 1;
+    orderKeys.splice(insertAt, 0, moved);
+    renderOrderingList(question, content);
+  }
+  // ボタンとボタンの隙間そのものをドロップ先にする(ボタン自体は光らせない)
+  function createGap(insertIndex) {
+    const gap = document.createElement('li');
+    gap.className = 'ordering-gap';
+    gap.addEventListener('dragover', e => {
+      e.preventDefault();
+      gap.classList.add('active');
+    });
+    gap.addEventListener('dragleave', () => gap.classList.remove('active'));
+    gap.addEventListener('drop', e => {
+      e.preventDefault();
+      gap.classList.remove('active');
+      moveDraggedTo(insertIndex);
+    });
+    return gap;
+  }
+
+  list.appendChild(createGap(0));
   orderKeys.forEach((key, idx) => {
     const item = question.items.find(i => i.key === key);
     const li = document.createElement('li');
@@ -951,24 +987,10 @@ function renderOrderingList(question, content) {
     });
     li.addEventListener('dragend', () => {
       li.classList.remove('dragging');
-      list.querySelectorAll('.ordering-item').forEach(el => el.classList.remove('drag-over'));
-    });
-    li.addEventListener('dragover', e => {
-      e.preventDefault();
-      li.classList.add('drag-over');
-    });
-    li.addEventListener('dragleave', () => { li.classList.remove('drag-over'); });
-    li.addEventListener('drop', e => {
-      e.preventDefault();
-      li.classList.remove('drag-over');
-      const from = window.__dragIndex;
-      window.__dragIndex = null;
-      if (from === undefined || from === null || from === idx) return;
-      const moved = orderKeys.splice(from, 1)[0];
-      orderKeys.splice(idx, 0, moved);
-      renderOrderingList(question, content);
+      list.querySelectorAll('.ordering-gap').forEach(el => el.classList.remove('active'));
     });
     list.appendChild(li);
+    list.appendChild(createGap(idx + 1));
   });
   content.appendChild(list);
   updateSubmitEnabled();
@@ -1006,18 +1028,18 @@ function scoreQuestion(question, response) {
       const c = question.choices.find(ch => ch.key === key);
       if (c) sum += c.points;
     });
-    return Math.max(0, sum);
+    return sum;
   }
   if (question.type === 'numeric') {
     const diff = Math.abs(response - question.correctValue);
-    return Math.max(0, question.points - question.penaltyPerUnit * diff);
+    return question.points - question.penaltyPerUnit * diff;
   }
   if (question.type === 'ordering') {
+    // 完全一致なら満点、それ以外も正しい位置に置けた項目数に応じて段階的に加点する
     const correct = question.items.map(i => i.key);
-    if (arraysEqual(response, correct)) return question.points;
-    const mismatches = correct.reduce((count, key, i) => count + (response[i] !== key ? 1 : 0), 0);
-    if (mismatches === 2) return Math.round(question.points / 2);
-    return 0;
+    const total = correct.length;
+    const correctCount = correct.reduce((count, key, i) => count + (response[i] === key ? 1 : 0), 0);
+    return Math.round(question.points * correctCount / total);
   }
   return 0;
 }
