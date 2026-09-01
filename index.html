@@ -528,9 +528,21 @@ function setupRankingRealTimeListener(callback) {
 }
 
 async function addRankingEntry(name, score, maxScore) {
-  const list = await loadRanking();
-  list.push({ id: uid(), santaName: name, score, maxScore, date: Date.now() });
-  await saveRanking(list);
+  const entry = { id: uid(), santaName: name, score, maxScore, date: Date.now() };
+  // 「全件読み込み → 追加 → 配列全体を上書き」で保存すると、複数人がほぼ同時に
+  // クイズを終えたときに互いの書き込みを打ち消し合い、記録が消える(ロストアップデート)。
+  // transaction() なら競合時に最新値で自動リトライされるため、同時終了でも消えない。
+  try {
+    await db.ref(RANKING_KEY).transaction(current => {
+      const list = Array.isArray(current) ? current.slice() : [];
+      // リトライで同じ回答が二重登録されないように、同一idが既にあれば何もしない
+      if (list.some(e => e && e.id === entry.id)) return list;
+      list.push(entry);
+      return list.sort((a, b) => b.score - a.score);
+    });
+  } catch (e) {
+    showToast('ランキングの保存に失敗しました');
+  }
 }
 
 /* ==================== お母さんイラスト(絵文字の顔+体、クリスマス背景) ==================== */
