@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>チャリティーサンタ北東京支部 ご家庭班クイズ</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -22,6 +22,18 @@
   }
   * { font-family: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', sans-serif; }
   body {
+    background: #060c1c;
+    min-height: 100vh;
+    color: var(--outline-brown);
+  }
+  /* 背景は固定レイヤーに分離する。body に background-attachment:fixed を付けると
+     スマホ(特に iOS Safari)で描画負荷が跳ね上がり、スクロールが効かなくなることがある */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: -1;
+    pointer-events: none;
     background:
       radial-gradient(1.6px 1.6px at 10% 12%, rgba(255,255,255,0.9), transparent),
       radial-gradient(1.4px 1.4px at 32% 28%, rgba(255,255,255,0.7), transparent),
@@ -34,9 +46,6 @@
       radial-gradient(1.5px 1.5px at 85% 90%, rgba(255,255,255,0.6), transparent),
       radial-gradient(circle at 15% 6%, #26375f 0%, transparent 35%),
       radial-gradient(circle at 30% 0%, #16224a 0%, #0d1830 45%, #060c1c 100%);
-    background-attachment: fixed;
-    min-height: 100vh;
-    color: var(--outline-brown);
   }
   #moon {
     position: fixed;
@@ -1482,7 +1491,8 @@ function wireEventListeners() {
 /* ==================== 起動 ==================== */
 document.addEventListener('DOMContentLoaded', async () => {
   questions = await loadQuestions();
-  initSnowfall(45);
+  // スマホでは雪の数を減らす(アニメーション負荷でスクロールが重くなるのを防ぐ)
+  initSnowfall(window.innerWidth < 768 ? 15 : 45);
   wireEventListeners();
   await goHome();
   refreshIcons();
